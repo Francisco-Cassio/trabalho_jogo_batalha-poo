@@ -67,11 +67,14 @@ class Batalha {
 
           if (existeAtacante && existeDefensor) {
             console.log("[TURNO]: Personagens existem, iniciando rolada.");
-            const atacante = this.encontrarPersonagem(atacanteId)!;
-            const defensor = this.encontrarPersonagem(defensorId)!;
+            let atacante = this.encontrarPersonagem(atacanteId)!;
+            let defensor = this.encontrarPersonagem(defensorId)!;
 
             do {
-              console.log(this.turno(atacanteId, defensorId));
+              console.log(this.turno(atacante.id, defensor.id));
+              const auxTrocaPersonagens = atacante;
+              atacante = defensor;
+              defensor = auxTrocaPersonagens;
             } while (atacante.estaVivo() && defensor.estaVivo());
 
             console.log(this.verificarVencedor(atacante, defensor));
@@ -142,7 +145,7 @@ class Batalha {
 
   public verificarVencedor(p1: Personagem, p2: Personagem): Personagem {
     const personagensBatalhando = [p1, p2];
-    const quemEstaVivo = personagensBatalhando.filter((p) => p.estaVivo)[0];
+    const quemEstaVivo = personagensBatalhando.filter((p) => p.estaVivo())[0];
     return quemEstaVivo;
   }
 

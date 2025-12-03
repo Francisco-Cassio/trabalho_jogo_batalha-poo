@@ -29,10 +29,11 @@ abstract class Personagem {
   public receberDano(valor: number): void {
     if (this.vida > 0) {
       this.vida -= valor - this.defesaBase;
+    }
 
-      if (this.vida < 0) {
-        this.vida = 0;
-      }
+    if (this.vida < 0) {
+      this.vida = 0;
+      this.vivo = false;
     }
   }
 
@@ -40,8 +41,8 @@ abstract class Personagem {
     this._historico.push(acao);
   }
 
-  public estaVivo(p: Personagem) {
-    return p.vida > 0;
+  public estaVivo() {
+    return this.vida > 0;
   }
 
   get vida() {
@@ -60,12 +61,20 @@ abstract class Personagem {
     return this._id;
   }
 
+  get vivo() {
+    return this._vivo;
+  }
+
   set vida(novaVida: number) {
     this._vida = novaVida;
   }
 
   set ataqueBase(novoAtaque: number) {
     this._ataqueBase = novoAtaque;
+  }
+
+  set vivo(novoStatus: boolean) {
+    this._vivo = novoStatus;
   }
 }
 

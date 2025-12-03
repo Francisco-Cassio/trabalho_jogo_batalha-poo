@@ -24,6 +24,21 @@ class Acao {
   set valorDano(novoDano: number) {
     this._valorDano = novoDano;
   }
+
+  toString() {
+    return (
+      "origem: " +
+      this._origem.id +
+      ", alvo: " +
+      this._alvo.id +
+      ", tipo: " +
+      this._tipo +
+      ", valorDano: " +
+      this._valorDano +
+      ", dataHora: " +
+      this._dataHora.toLocaleString()
+    );
+  }
 }
 
 export { Acao };

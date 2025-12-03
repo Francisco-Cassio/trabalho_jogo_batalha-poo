@@ -19,7 +19,7 @@ class Batalha {
     let opcao: string = "";
     let opcao_personagem: string = "";
     let id = 1;
-    let nome: string = this.input("Nome: ");
+    let nome: string = "";
 
     do {
       console.log("\n========== BATALHA ==========\n");
@@ -39,42 +39,51 @@ class Batalha {
           switch (opcao_personagem) {
             case "1":
               nome = this.input("Nome: ");
-              let guerreio = new Guerreiro(id, nome, 5, 2);
+              const guerreio: Guerreiro = new Guerreiro(id, nome, 5, 2);
               this.adicionarPersonagem(guerreio);
               break;
             case "2":
               nome = this.input("Nome: ");
-              let mago = new Mago(id, nome, 3, 4);
+              const mago: Mago = new Mago(id, nome, 3, 4);
               this.adicionarPersonagem(mago);
+              break;
             case "3":
               nome = this.input("Nome: ");
-              let arqueiro = new Arqueiro(id, nome, 4, 3);
+              const arqueiro: Arqueiro = new Arqueiro(id, nome, 4, 3);
               this.adicionarPersonagem(arqueiro);
+              break;
           }
+          id++;
           break;
 
-        case "02":
-          let atacanteId: number = parseInt(this.input("ID do jogador 1: "));
-          let defensorId: number = parseInt(this.input("ID do jogador 2: "));
+        case "2":
+          const atacanteId: number = parseInt(this.input("ID do jogador 1: "));
+          const defensorId: number = parseInt(this.input("ID do jogador 2: "));
 
-          if ((atacanteId && defensorId) in this._personagens) {
-            const atacante = this._personagens.find((p) => p.id === atacanteId);
-            const defensor = this._personagens.find((p) => p.id === defensorId);
+          const existeAtacante: boolean =
+            this.existePersonagemComId(atacanteId);
+          const existeDefensor: boolean =
+            this.existePersonagemComId(defensorId);
+
+          if (existeAtacante && existeDefensor) {
+            console.log("[TURNO]: Personagens existem, iniciando rolada.");
+            const atacante = this.encontrarPersonagem(atacanteId);
+            const defensor = this.encontrarPersonagem(defensorId);
 
             do {
-              this.turno(atacanteId, defensorId);
+              console.log(this.turno(atacanteId, defensorId));
             } while (!atacante?.estaVivo || !defensor?.estaVivo);
 
-            this.verificarVencedor();
+            console.log(this.verificarVencedor(atacante, defensor));
           }
 
           break;
 
-        case "03":
-          this.listarPersonagens();
+        case "3":
+          console.log(this.listarPersonagens());
           break;
-        case "04":
-          this.listarAcoes();
+        case "4":
+          console.log(this.listarAcoes());
           break;
         case "0":
           console.log("Saindo...");
@@ -89,12 +98,23 @@ class Batalha {
   }
 
   public adicionarPersonagem(p: Personagem): void {
-    this._personagens.push(p);
+    this.personagens.push(p);
+  }
+
+  public adicionarAcao(acao: Acao): void {
+    this.acoes.push(acao);
+  }
+  private encontrarPersonagem(id: number): Personagem | undefined {
+    return this.personagens.find((p) => p.id === id);
+  }
+
+  private existePersonagemComId(id: number): boolean {
+    return this.encontrarPersonagem(id) ? true : false;
   }
 
   public turno(atacanteId: number, defensorId: number): Acao[] {
-    const atacante = this._personagens.find((p) => p.id === atacanteId);
-    const defensor = this._personagens.find((p) => p.id === defensorId);
+    const atacante = this.encontrarPersonagem(atacanteId);
+    const defensor = this.encontrarPersonagem(defensorId);
 
     if (!atacante || !defensor) {
       console.error("Atacante ou defensor não encontrado.");
@@ -108,25 +128,32 @@ class Batalha {
 
     const acao = atacante.atacar(defensor);
     defensor.receberDano(atacante.ataqueBase);
-    this._acoes.push(acao);
-
+    this.adicionarAcao(acao);
     return [acao];
   }
 
   public listarPersonagens(): Personagem[] {
-    return this._personagens;
+    return this.personagens;
   }
 
   public listarAcoes(): Acao[] {
+    return this.acoes;
+  }
+
+  public verificarVencedor(p1: Personagem, p2: Personagem): Personagem {
+    const personagensBatalhando = [p1, p2];
+    const quemEstaVivo = personagensBatalhando.filter((p) => p.estaVivo)[0];
+    return quemEstaVivo;
+  }
+
+  get personagens() {
+    return this._personagens;
+  }
+
+  get acoes() {
     return this._acoes;
   }
-
-  public verificarVencedor(): Personagem | null {
-    const personagensVivos = this._personagens.filter((p) => p.estaVivo(p));
-
-    if (personagensVivos.length === 1) {
-      return personagensVivos[0];
-    }
-    return null;
-  }
 }
+
+let batalha: Batalha = new Batalha();
+batalha.menu();

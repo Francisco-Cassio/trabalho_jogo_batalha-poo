@@ -3,6 +3,7 @@ import { Acao } from "./acao";
 import { Guerreiro } from "./guerreiro";
 import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
+import { acertoEventoProbabilidade } from "./utils/utils";
 import prompt from "prompt-sync";
 
 class Batalha {
@@ -39,17 +40,17 @@ class Batalha {
           switch (opcao_personagem) {
             case "1":
               nome = this.input("Nome: ");
-              const guerreiro: Guerreiro = new Guerreiro(id, nome, 5, 1);
+              const guerreiro: Guerreiro = new Guerreiro(id, nome);
               this.adicionarPersonagem(guerreiro);
               break;
             case "2":
               nome = this.input("Nome: ");
-              const mago: Mago = new Mago(id, nome, 3, 3);
+              const mago: Mago = new Mago(id, nome);
               this.adicionarPersonagem(mago);
               break;
             case "3":
               nome = this.input("Nome: ");
-              const arqueiro: Arqueiro = new Arqueiro(id, nome, 4, 2);
+              const arqueiro: Arqueiro = new Arqueiro(id, nome);
               this.adicionarPersonagem(arqueiro);
               break;
           }
@@ -57,18 +58,13 @@ class Batalha {
           break;
 
         case "2":
-          const atacanteId: number = parseInt(this.input("ID do Jogador 1: "));
-          const defensorId: number = parseInt(this.input("ID do Jogador 2: "));
+          const atacanteNome: string = this.input("Nome do Jogador 1: ");
+          const defensorNome: string = this.input("Nome do Jogador 2: ");
 
-          const existeAtacante: boolean =
-            this.existePersonagemComId(atacanteId);
-          const existeDefensor: boolean =
-            this.existePersonagemComId(defensorId);
-
-          if (existeAtacante && existeDefensor) {
+          if (atacanteNome && defensorNome) {
             console.log("\n[TURNO]: Iniciando rodada.");
-            let atacante = this.encontrarPersonagem(atacanteId)!;
-            let defensor = this.encontrarPersonagem(defensorId)!;
+            let atacante = this.consultarPersonagem(atacanteNome)!;
+            let defensor = this.consultarPersonagem(defensorNome)!;
 
             do {
               this.turno(atacante.id, defensor.id);
@@ -85,7 +81,6 @@ class Batalha {
               console.log(`Vida Restante: ${vencedor.vida}`);
               console.log(`Ataque: ${vencedor.ataqueBase}`);
               console.log(`Defesa: ${vencedor.defesaBase}`);
-              console.log("\nFim do turno.\n");
             } else {
               console.log("\nEmpate!\nAmbos os jogadores foram derrotados!\n");
             }
@@ -109,31 +104,28 @@ class Batalha {
     console.log("Aplicação encerrada.");
   }
 
+  public consultarId(id: number): Personagem {
+    return this.personagens.find((p) => p.id === id)!;
+  }
+
   public adicionarPersonagem(p: Personagem): void {
     this.personagens.push(p);
   }
 
-  public adicionarAcao(acao: Acao): void {
-    this.acoes.push(acao);
-  }
-  private encontrarPersonagem(id: number): Personagem {
-    return this.personagens.find((p) => p.id === id)!;
-  }
-
-  private existePersonagemComId(id: number): boolean {
-    return this.encontrarPersonagem(id) ? true : false;
-  }
-
-  public turno(atacanteId: number, defensorId: number): Acao[] {
-    const atacante = this.encontrarPersonagem(atacanteId);
-    const defensor = this.encontrarPersonagem(defensorId);
+  public turno(atacanteNome: number, defensorNome: number): Acao[] {
+    const atacante = this.consultarId(atacanteNome);
+    const defensor = this.consultarId(defensorNome);
+    const ataqueAtacante: number = atacante.ataqueBase;
+    const ataqueDefensor: number = defensor.ataqueBase;
+    const defesaDefensor: number = defensor.defesaBase;
+    let acao: Acao;
 
     if (!atacante || !defensor) {
       console.error("\nAtacante ou defensor não encontrado.");
       return [];
     }
 
-    if (atacanteId === defensorId) {
+    if (atacanteNome === defensorNome) {
       console.error("\nUm personagem não pode atacar a si mesmo.");
       return [];
     }
@@ -143,55 +135,42 @@ class Batalha {
       return [];
     }
 
+    if (atacante instanceof Guerreiro) {
+      if (atacante.vida < atacante.vida * 0.3) {
+        atacante.ataqueBase = atacante.ataqueBase * 1.3;
+      }
+
+      if (defensor.ataqueBase < atacante.ataqueBase) {
+        defensor.ataqueBase = 0;
+        console.log(`\nO ataque de ${defensor.nome} não surtiu efeito.`);
+      }
+    } else if (atacante instanceof Mago) {
+      defensor.defesaBase = 0;
+
+      if (defensor instanceof Arqueiro) {
+        atacante.ataqueBase *= 2;
+      }
+      atacante.receberDano(10);
+    } else if (atacante instanceof Arqueiro) {
+      if (acertoEventoProbabilidade(50)) {
+        atacante.ataqueBase *= atacante.ataqueMultiplo;
+      }
+    }
     console.log(`\n========== Vez de ${atacante.nome} ==========`);
-    console.log("\nEscolha seu ataque: \n");
 
-    atacante.ataques.forEach((ataque, index) => {
-      if (ataque === "Ataque Duplo" && atacante instanceof Arqueiro) {
-        console.log(
-          `${index + 1} - ${ataque} (${
-            (atacante as Arqueiro).usosRestantesAtaqueDuplo
-          }x)`
-        );
-      } else {
-        console.log(`${index + 1} - ${ataque}`);
-      }
-    });
+    acao = atacante.atacar(defensor);
+    console.log(`\n${atacante.nome} usou ${acao.tipo} em ${defensor.nome}!\n`);
+    console.log(`Vida de ${atacante.nome}: ${atacante.vida}`);
+    console.log(`Vida de ${defensor.nome}: ${defensor.vida}`);
+    atacante.ataqueBase = ataqueAtacante;
+    defensor.ataqueBase = ataqueDefensor;
+    defensor.defesaBase = defesaDefensor;
+    this.acoes.push(acao);
+    return [acao];
+  }
 
-    const opcaoAtaque = parseInt(this.input("Opção: "));
-    const ataqueEscolhido = atacante.ataques[opcaoAtaque - 1];
-
-    let acao: Acao;
-
-    if (ataqueEscolhido) {
-      switch (ataqueEscolhido) {
-        case "Ataque":
-          acao = atacante.atacar(defensor);
-          break;
-        case "Magia":
-          acao = (atacante as Mago).atacar(defensor);
-          break;
-        case "Magia Especial":
-          acao = (atacante as Mago).magiaEspecial(defensor);
-          break;
-        case "Ataque Duplo":
-          acao = (atacante as Arqueiro).ataqueDuplo(defensor);
-          break;
-      }
-    }
-    if (acao!) {
-      defensor.receberDano(acao.valorDano);
-      this.adicionarAcao(acao);
-      console.log(
-        `\n${atacante.nome} usou ${acao.tipo} em ${defensor.nome}!\n`
-      );
-      console.log(`Vida de ${atacante.nome}: ${atacante.vida}`);
-      console.log(`Vida de ${defensor.nome}: ${defensor.vida}`);
-      return [acao];
-    }
-
-    console.error("Ataque inválido!");
-    return [];
+  private consultarPersonagem(nome: string): Personagem {
+    return this.personagens.find((p) => p.nome === nome)!;
   }
 
   public listarPersonagens(): Personagem[] {
@@ -203,8 +182,8 @@ class Batalha {
   }
 
   public verificarVencedor(p1: Personagem, p2: Personagem): Personagem {
-    const personagensBatalhando = [p1, p2];
-    const quemEstaVivo = personagensBatalhando.filter((p) => p.estaVivo())[0];
+    const personagensVivos = [p1, p2];
+    const quemEstaVivo = personagensVivos.filter((p) => p.estaVivo())[0];
     return quemEstaVivo;
   }
 
@@ -218,9 +197,9 @@ class Batalha {
 }
 
 let batalha: Batalha = new Batalha();
-const p1: Guerreiro = new Guerreiro(1, "Sparta", 5, 1);
-const p2: Mago = new Mago(2, "Patolino", 3, 3);
-const p3: Arqueiro = new Arqueiro(3, "Jonh", 4, 2);
+const p1: Guerreiro = new Guerreiro(1, "Sparta");
+const p2: Mago = new Mago(2, "Patolino");
+const p3: Arqueiro = new Arqueiro(3, "Jonh");
 batalha.adicionarPersonagem(p1);
 batalha.adicionarPersonagem(p2);
 batalha.adicionarPersonagem(p3);

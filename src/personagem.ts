@@ -1,6 +1,6 @@
 import { Acao } from "./acao";
 
-abstract class Personagem {
+class Personagem {
   private _id: number;
   private _nome: string;
   private _vida: number;
@@ -8,25 +8,29 @@ abstract class Personagem {
   private _defesaBase: number;
   private _vivo: boolean;
   private _historico: Acao[];
-  private _ataques: string[];
 
-  constructor(
-    id: number,
-    nome: string,
-    ataqueBase: number,
-    defesaBase: number
-  ) {
+  constructor(id: number, nome: string, ataqueBase: number) {
     this._id = id;
     this._nome = nome;
-    this._vida = 20;
+    this._vida = 100;
     this._ataqueBase = ataqueBase;
-    this._defesaBase = defesaBase;
+    this._defesaBase = 0;
     this._vivo = true;
     this._historico = [];
-    this._ataques = [];
   }
 
-  public abstract atacar(alvo: Personagem): Acao;
+  public atacar(alvo: Personagem): Acao {
+    let ataque: Acao = new Acao(
+      this,
+      alvo,
+      "ataque",
+      this.ataqueBase,
+      new Date()
+    );
+    alvo.receberDano(ataque.valorDano);
+    this.registrarAcao(ataque);
+    return ataque;
+  }
 
   public receberDano(valor: number): void {
     if (this.vida > 0 && valor > 0) {
@@ -36,17 +40,19 @@ abstract class Personagem {
     if (this.vida < 0) {
       this.vida = 0;
       this.vivo = false;
-    } else {
+    }
+
+    if (this.vida === 0) {
       this.vivo = false;
     }
   }
 
-  public registrarAcao(acao: Acao): void {
-    this._historico.push(acao);
-  }
-
   public estaVivo() {
     return this.vida > 0;
+  }
+
+  public registrarAcao(acao: Acao): void {
+    this.historico.push(acao);
   }
 
   get vida() {
@@ -69,12 +75,12 @@ abstract class Personagem {
     return this._vivo;
   }
 
-  get ataques() {
-    return this._ataques;
-  }
-
   get nome() {
     return this._nome;
+  }
+
+  get historico() {
+    return this._historico;
   }
 
   set nome(novoNome: string) {
@@ -89,12 +95,16 @@ abstract class Personagem {
     this._ataqueBase = novoAtaque;
   }
 
+  set defesaBase(novaDefesa: number) {
+    this._defesaBase = novaDefesa;
+  }
+
   set vivo(novoStatus: boolean) {
     this._vivo = novoStatus;
   }
 
-  set ataques(novosAtaques: string[]) {
-    this._ataques = novosAtaques;
+  set historico(novoHistorico: Acao[]) {
+    this._historico = novoHistorico;
   }
 }
 

@@ -25,6 +25,18 @@ class Acao {
     this._valorDano = novoDano;
   }
 
+  get valorDano(): number {
+    return this._valorDano;
+  }
+
+  get tipo(): string {
+    return this._tipo;
+  }
+
+  set tipo(novoTipo: string) {
+    this._tipo = novoTipo;
+  }
+
   toString() {
     return (
       "origem: " +

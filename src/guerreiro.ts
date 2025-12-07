@@ -10,10 +10,17 @@ class Guerreiro extends Personagem {
     defesaBase: number
   ) {
     super(id, nome, ataqueBase, defesaBase);
+    this.ataques.push("Ataque");
   }
 
   public atacar(alvo: Personagem): Acao {
-    let ataque: Acao = new Acao(this, alvo, "1", this.ataqueBase, new Date());
+    let ataque: Acao = new Acao(
+      this,
+      alvo,
+      "ataque",
+      this.ataqueBase,
+      new Date()
+    );
 
     if (this.oponenteÉMago(alvo)) {
       ataque.valorDano += 3;

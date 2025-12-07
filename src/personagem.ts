@@ -8,6 +8,7 @@ abstract class Personagem {
   private _defesaBase: number;
   private _vivo: boolean;
   private _historico: Acao[];
+  private _ataques: string[];
 
   constructor(
     id: number,
@@ -22,17 +23,20 @@ abstract class Personagem {
     this._defesaBase = defesaBase;
     this._vivo = true;
     this._historico = [];
+    this._ataques = [];
   }
 
   public abstract atacar(alvo: Personagem): Acao;
 
   public receberDano(valor: number): void {
-    if (this.vida > 0) {
+    if (this.vida > 0 && valor > 0) {
       this.vida -= valor - this.defesaBase;
     }
 
     if (this.vida < 0) {
       this.vida = 0;
+      this.vivo = false;
+    } else {
       this.vivo = false;
     }
   }
@@ -65,6 +69,18 @@ abstract class Personagem {
     return this._vivo;
   }
 
+  get ataques() {
+    return this._ataques;
+  }
+
+  get nome() {
+    return this._nome;
+  }
+
+  set nome(novoNome: string) {
+    this._nome = novoNome;
+  }
+
   set vida(novaVida: number) {
     this._vida = novaVida;
   }
@@ -75,6 +91,10 @@ abstract class Personagem {
 
   set vivo(novoStatus: boolean) {
     this._vivo = novoStatus;
+  }
+
+  set ataques(novosAtaques: string[]) {
+    this._ataques = novosAtaques;
   }
 }
 

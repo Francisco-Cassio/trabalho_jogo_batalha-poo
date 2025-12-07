@@ -37,12 +37,8 @@ class Personagem {
       this.vida -= valor - this.defesaBase;
     }
 
-    if (this.vida < 0) {
+    if (this.vida <= 0) {
       this.vida = 0;
-      this.vivo = false;
-    }
-
-    if (this.vida === 0) {
       this.vivo = false;
     }
   }

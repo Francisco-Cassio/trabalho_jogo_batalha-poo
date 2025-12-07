@@ -39,17 +39,17 @@ class Batalha {
           switch (opcao_personagem) {
             case "1":
               nome = this.input("Nome: ");
-              const guerreiro: Guerreiro = new Guerreiro(id, nome, 5, 2);
+              const guerreiro: Guerreiro = new Guerreiro(id, nome, 5, 1);
               this.adicionarPersonagem(guerreiro);
               break;
             case "2":
               nome = this.input("Nome: ");
-              const mago: Mago = new Mago(id, nome, 3, 4);
+              const mago: Mago = new Mago(id, nome, 3, 3);
               this.adicionarPersonagem(mago);
               break;
             case "3":
               nome = this.input("Nome: ");
-              const arqueiro: Arqueiro = new Arqueiro(id, nome, 4, 3);
+              const arqueiro: Arqueiro = new Arqueiro(id, nome, 4, 2);
               this.adicionarPersonagem(arqueiro);
               break;
           }
@@ -77,15 +77,18 @@ class Batalha {
               defensor = auxTrocaPersonagens;
             } while (atacante.estaVivo() && defensor.estaVivo());
 
+            console.log("\n=========== FIM DO TURNO ==========");
             const vencedor = this.verificarVencedor(atacante, defensor);
-
-            console.log(`\nVencedor:\n`);
-            console.log(`Nome: ${vencedor.nome}`);
-            console.log(`ID: ${vencedor.id}`);
-            console.log(`Vida Restante: ${vencedor.vida}`);
-            console.log(`Ataque: ${vencedor.ataqueBase}`);
-            console.log(`Defesa: ${vencedor.defesaBase}`);
-            console.log("\nFim do turno.\n");
+            if (vencedor) {
+              console.log(`\nVencedor: ${vencedor.nome}\n`);
+              console.log(`ID: ${vencedor.id}`);
+              console.log(`Vida Restante: ${vencedor.vida}`);
+              console.log(`Ataque: ${vencedor.ataqueBase}`);
+              console.log(`Defesa: ${vencedor.defesaBase}`);
+              console.log("\nFim do turno.\n");
+            } else {
+              console.log("\nEmpate!\nAmbos os jogadores foram derrotados!\n");
+            }
           }
           break;
         case "3":
@@ -144,7 +147,15 @@ class Batalha {
     console.log("\nEscolha seu ataque: \n");
 
     atacante.ataques.forEach((ataque, index) => {
-      console.log(`${index + 1} - ${ataque}`);
+      if (ataque === "Ataque Duplo" && atacante instanceof Arqueiro) {
+        console.log(
+          `${index + 1} - ${ataque} (${
+            (atacante as Arqueiro).usosRestantesAtaqueDuplo
+          }x)`
+        );
+      } else {
+        console.log(`${index + 1} - ${ataque}`);
+      }
     });
 
     const opcaoAtaque = parseInt(this.input("Opção: "));
@@ -171,7 +182,10 @@ class Batalha {
     if (acao!) {
       defensor.receberDano(acao.valorDano);
       this.adicionarAcao(acao);
-      console.log(`\n${atacante.nome} usou ${acao.tipo} em ${defensor.nome}!`);
+      console.log(
+        `\n${atacante.nome} usou ${acao.tipo} em ${defensor.nome}!\n`
+      );
+      console.log(`Vida de ${atacante.nome}: ${atacante.vida}`);
       console.log(`Vida de ${defensor.nome}: ${defensor.vida}`);
       return [acao];
     }
@@ -204,9 +218,9 @@ class Batalha {
 }
 
 let batalha: Batalha = new Batalha();
-const p1: Guerreiro = new Guerreiro(1, "Sparta", 5, 2);
-const p2: Mago = new Mago(2, "Patolino", 3, 4);
-const p3: Arqueiro = new Arqueiro(3, "Jonh", 4, 3);
+const p1: Guerreiro = new Guerreiro(1, "Sparta", 5, 1);
+const p2: Mago = new Mago(2, "Patolino", 3, 3);
+const p3: Arqueiro = new Arqueiro(3, "Jonh", 4, 2);
 batalha.adicionarPersonagem(p1);
 batalha.adicionarPersonagem(p2);
 batalha.adicionarPersonagem(p3);

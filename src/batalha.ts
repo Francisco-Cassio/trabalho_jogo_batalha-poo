@@ -28,35 +28,36 @@ class Batalha {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
       console.log(" 1 - Adicionar Personagem");
       console.log(" 2 - Iniciar Turno de Combate");
-      console.log(" 3 - Verificar Status dos Personagens");
+      console.log(" 3 - Verificar Personagens");
       console.log(" 4 - Logs de Ações");
       console.log("\n 0 - Sair da Aplicação");
       console.log("\n======================================\n");
       opcao = this.input("Opção: ");
       switch (opcao) {
         case "1":
+          console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
           console.log(
-            "\nSeu personagem será:\n1 - Guerreiro 🛡️\n2 - Mago 🔮\n3 - Arqueiro 🏹"
+            "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n"
           );
-          opcaoPersonagem = this.input("Opção: ");
+          opcaoPersonagem = this.input("➡️ Opção: ");
           switch (opcaoPersonagem) {
             case "1":
-              nome = this.input("Nome: ");
+              nome = this.input("✉️ Nome: ");
               const guerreiro: Guerreiro = new Guerreiro(id, nome);
               this.adicionarPersonagem(guerreiro);
-              console.log(`✅ Guerreiro ${nome} adicionado!`);
+              console.log(`\n✅ Guerreiro ${nome} adicionado!`);
               break;
             case "2":
-              nome = this.input("Nome: ");
+              nome = this.input("✉️ Nome: ");
               const mago: Mago = new Mago(id, nome);
               this.adicionarPersonagem(mago);
-              console.log(`✅ Mago ${nome} adicionado!`);
+              console.log(`\n✅ Mago ${nome} adicionado!`);
               break;
             case "3":
-              nome = this.input("Nome: ");
+              nome = this.input("✉️ Nome: ");
               const arqueiro: Arqueiro = new Arqueiro(id, nome);
               this.adicionarPersonagem(arqueiro);
-              console.log(`✅ Arqueiro ${nome} adicionado!`);
+              console.log(`\n✅ Arqueiro ${nome} adicionado!`);
               break;
             default:
               console.log("\n❌ Opção de classe inválida.");
@@ -66,25 +67,57 @@ class Batalha {
           break;
 
         case "2":
+          if (this.personagens.length < 2) {
+            console.log("\n❌ Mínimo de 2 personagens para iniciar combate.");
+            break;
+          }
+
+          console.log("\n=============================================\n");
+
+          console.log("\n👥 Escolha os personagens para a batalha:\n");
+          this.personagens.forEach((p) =>
+            console.log(`${p.id} - ${p.nome} (${p.constructor.name})`)
+          );
+          console.log(
+            "\n🏷️ Digite os IDs separados por vírgula (ex: 1,2) ou <Enter> para todos.\n"
+          );
+
+          const idsEscolhidos = this.input("➡️ Opção: ");
+          let participantes: Personagem[];
+
+          if (!idsEscolhidos.trim()) {
+            participantes = this.personagens;
+          } else {
+            const ids = idsEscolhidos
+              .split(",")
+              .map((id) => parseInt(id.trim()));
+            participantes = this.personagens.filter((p) => ids.includes(p.id));
+          }
+
+          if (participantes.length < 2) {
+            console.log("\n❌ Seleção inválida. Mínimo de 2 personagens.");
+            break;
+          }
+
           console.log("\n==============🔥 INICIANDO COMBATE 🔥==============");
-          console.log(`\n🤺 Jogadores: `);
-          this.personagens.forEach((p) => {
-            console.log(`- ${p.nome} (${p.constructor.name})`);
+          console.log(`\n🤺 Jogadores:\n`);
+          participantes.forEach((p) => {
+            console.log(`  • ${p.nome} (${p.constructor.name})`);
           });
           this.input("\n➡️ <Enter> para iniciar o turno.");
 
-          while (this.personagens.filter((p) => p.estaVivo()).length > 1) {
+          while (participantes.filter((p) => p.estaVivo()).length > 1) {
             console.log(
               `\n============== ⚔️ RODADA DE COMBATE ⚔️ ==============`
             );
-            const combatentes = this.sortearCombatentes();
+            const combatentes = this.sortearCombatentes(participantes);
             atacante = combatentes[0];
             defensor = combatentes[1];
 
             this.turno(atacante.id, defensor.id);
 
             console.log(`\n👤 Situação Atual:\n`);
-            this.personagens.forEach((p) => {
+            participantes.forEach((p) => {
               if (!p.estaVivo()) {
                 console.log(`  • ${p.nome}: ${p.vida} vida ❌ morto(a)`);
               } else {
@@ -94,28 +127,51 @@ class Batalha {
           }
 
           console.log("\n=========== ❌ FIM DA BATALHA ❌ ===========");
-          const vencedor = this.personagens.find((p) => p.estaVivo());
+          const vencedor = participantes.find((p) => p.estaVivo());
           if (vencedor) {
             console.log(`\n🏆 Resultado Final:`);
             console.log(
               `\n✔️ Vencedor: ${vencedor.nome} (${vencedor.constructor.name})`
             );
-            console.log(`🫀 Vida Restante: ${vencedor.vida}`);
-            console.log(`🗡️ Ataque: ${vencedor.ataqueBase}`);
-            console.log(`🛡️ Defesa: ${vencedor.defesaBase}`);
+            console.log(`🧡️ Vida Restante: ${vencedor.vida}`);
           } else {
             console.log("\n💥 Empate! Ambos os jogadores foram derrotados!\n");
           }
           break;
 
         case "3":
-          console.log("\n📋 STATUS DOS PERSONAGENS:");
-          console.log(this.listarPersonagens());
+          console.log("==============================================");
+          console.log("\n📋 LISTA DE PERSONAGENS:\n");
+          this.personagens.forEach((p) => {
+            console.log(`👤 ${p.nome} (${p.constructor.name})`);
+          });
+
+          console.log("\n🔎 Digite o nome para ver atributos: ");
+          const nomeBusca = this.input("➡️ ").toLocaleLowerCase();
+          console.log("\n==============================================");
+          const personagemEncontrado = this.consultarPersonagem(nomeBusca);
+          if (!personagemEncontrado) {
+            console.log("\n❌ Personagem não encontrado!");
+            break;
+          }
+          console.log("\n📋 STATUS DO PERSONAGEM:\n");
+          console.log(personagemEncontrado.toString());
           break;
+
         case "4":
+          console.log("\n==============================================");
           console.log("\n📜 LOG DE AÇÕES:");
-          console.log(this.listarAcoes());
+          if (this.acoes.length === 0) {
+            console.log("\n❌ Nenhuma ação registrada!");
+            break;
+          }
+          this.acoes.forEach((acao) => {
+            console.log(
+              `\nAção ${this.acoes.indexOf(acao) + 1}:\n${acao.toString()}`
+            );
+          });
           break;
+
         case "0":
           break;
         default:
@@ -210,7 +266,7 @@ class Batalha {
   }
 
   private consultarPersonagem(nome: string): Personagem {
-    return this.personagens.find((p) => p.nome === nome)!;
+    return this.personagens.find((p) => p.nome.toLocaleLowerCase() === nome)!;
   }
 
   public listarPersonagens(): Personagem[] {
@@ -221,8 +277,10 @@ class Batalha {
     return this.acoes;
   }
 
-  public sortearCombatentes(): Personagem[] {
-    const vivos = this.personagens.filter((p) => p.estaVivo());
+  public sortearCombatentes(
+    participantes: Personagem[] = this.personagens
+  ): Personagem[] {
+    const vivos = participantes.filter((p) => p.estaVivo());
     const atacante = sorteio(vivos);
     const defensores = vivos.filter((p) => p !== atacante);
     const defensor = sorteio(defensores);

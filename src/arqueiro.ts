@@ -6,6 +6,7 @@ class Arqueiro extends Personagem {
   constructor(id: number, nome: string) {
     super(id, nome, 15);
     this._ataqueMultiplo = 3;
+    this.passiva = "\n   - 50% de chance de ataque múltiplo (ataque × 3)";
   }
 
   get ataqueMultiplo() {

@@ -8,6 +8,7 @@ class Personagem {
   private _defesaBase: number;
   private _vivo: boolean;
   private _historico: Acao[];
+  private _passiva: string;
 
   constructor(id: number, nome: string, ataqueBase: number) {
     this._id = id;
@@ -17,6 +18,7 @@ class Personagem {
     this._defesaBase = 0;
     this._vivo = true;
     this._historico = [];
+    this._passiva = "";
   }
 
   public atacar(alvo: Personagem): Acao {
@@ -79,6 +81,10 @@ class Personagem {
     return this._historico;
   }
 
+  get passiva() {
+    return this._passiva;
+  }
+
   set nome(novoNome: string) {
     this._nome = novoNome;
   }
@@ -101,6 +107,26 @@ class Personagem {
 
   set historico(novoHistorico: Acao[]) {
     this._historico = novoHistorico;
+  }
+
+  set passiva(novaPassiva: string) {
+    this._passiva = novaPassiva;
+  }
+
+  toString() {
+    return (
+      `👤 ${this.nome} - ${this.constructor.name}\n` +
+      "\n • ID: " +
+      this.id +
+      "\n • Vida: " +
+      this.vida +
+      "\n • Ataque: " +
+      this.ataqueBase +
+      "\n • Defesa: " +
+      this.defesaBase +
+      "\n • Passiva: " +
+      this.passiva
+    );
   }
 }
 

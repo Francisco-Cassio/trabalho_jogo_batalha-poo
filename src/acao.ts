@@ -21,34 +21,46 @@ class Acao {
     this._dataHora = dataHora;
   }
 
-  set valorDano(novoDano: number) {
-    this._valorDano = novoDano;
+  get origem(): Personagem {
+    return this._origem;
   }
 
-  get valorDano(): number {
-    return this._valorDano;
+  get alvo(): Personagem {
+    return this._alvo;
   }
 
   get tipo(): string {
     return this._tipo;
   }
 
+  get valorDano(): number {
+    return this._valorDano;
+  }
+
+  get dataHora(): Date {
+    return this._dataHora;
+  }
+
   set tipo(novoTipo: string) {
     this._tipo = novoTipo;
   }
 
+  set valorDano(novoDano: number) {
+    this._valorDano = novoDano;
+  }
+
   toString() {
     return (
-      "origem: " +
-      this._origem.id +
-      ", alvo: " +
-      this._alvo.id +
-      ", tipo: " +
-      this._tipo +
-      ", valorDano: " +
-      this._valorDano +
-      ", dataHora: " +
-      this._dataHora.toLocaleString()
+      "🔰 Origem: " +
+      this.origem.nome +
+      "\n🎯 Alvo: " +
+      this.alvo.nome +
+      "\n⚙️ Tipo: " +
+      this.tipo +
+      "\n🩹 Valor do Dano: " +
+      this.valorDano +
+      "\n⌚ Data e Hora da Ação: " +
+      this.dataHora.toLocaleString()
     );
   }
 }

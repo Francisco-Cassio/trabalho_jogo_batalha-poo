@@ -12,6 +12,18 @@ class Arqueiro extends Personagem {
   get ataqueMultiplo() {
     return this._ataqueMultiplo;
   }
+
+  set ataqueMultiplo(novoValor: number) {
+    this._ataqueMultiplo = novoValor;
+  }
+
+  public toJSON() {
+    const base = super.toJSON();
+    return {
+      ...base,
+      ataqueMultiplo: this._ataqueMultiplo,
+    };
+  }
 }
 
 export { Arqueiro };

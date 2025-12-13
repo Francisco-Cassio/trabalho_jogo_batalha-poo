@@ -5,11 +5,13 @@ import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
 import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
 import prompt from "prompt-sync";
+import * as fs from "fs";
 
 class Batalha {
   private _personagens: Personagem[];
   private _acoes: Acao[];
   private input = prompt();
+  private NOME_ARQUIVO = "dados_batalha.json";
 
   constructor() {
     this._personagens = [];
@@ -19,10 +21,19 @@ class Batalha {
   public menu(): void {
     let opcao: string = "";
     let opcaoPersonagem: string = "";
-    let id: number = 1;
+    let id: number =
+      this.personagens.length > 0
+        ? Math.max(...this.personagens.map((p) => p.id)) + 1
+        : 1;
+
     let nome: string = "";
     let atacante: Personagem;
     let defensor: Personagem;
+
+    this.carregarDados();
+    if (this.personagens.length > 0) {
+      id = Math.max(...this.personagens.map((p) => p.id)) + 1;
+    }
 
     do {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
@@ -151,7 +162,9 @@ class Batalha {
           break;
 
         case "0":
+          this.salvarDados();
           break;
+
         default:
           console.log("\n❌ Opção inválida!");
       }
@@ -313,6 +326,62 @@ class Batalha {
     return vencedor;
   }
 
+  public salvarDados(): void {
+    try {
+      const dadosParaSalvar = this.personagens.map((p) => p.toJSON());
+      const dadosJSON = JSON.stringify(dadosParaSalvar, null, 2);
+
+      fs.writeFileSync(this.NOME_ARQUIVO, dadosJSON, "utf-8");
+      console.log(`\n💾 Dados salvos!`);
+    } catch (erro) {
+      console.error(`\n❌ Erro ao salvar dados: ${erro}`);
+    }
+  }
+
+  public carregarDados(): void {
+    try {
+      if (!fs.existsSync(this.NOME_ARQUIVO)) {
+        return;
+      }
+      const dadosJSON = fs.readFileSync(this.NOME_ARQUIVO, "utf-8");
+      const dados: any[] = JSON.parse(dadosJSON);
+
+      this._personagens = [];
+      let maxId = 0;
+
+      for (const dado of dados) {
+        let personagem: Personagem;
+        switch (dado.classe) {
+          case "Guerreiro":
+            personagem = new Guerreiro(dado.id, dado.nome);
+            break;
+          case "Mago":
+            personagem = new Mago(dado.id, dado.nome);
+            break;
+          case "Arqueiro":
+            personagem = new Arqueiro(dado.id, dado.nome);
+            (personagem as Arqueiro).ataqueMultiplo = dado.ataqueMultiplo;
+            break;
+          default:
+            console.error(`Classe desconhecida: ${dado.classe}`);
+            continue;
+        }
+
+        personagem.vida = dado.vida;
+        personagem.ataqueBase = dado.ataqueBase;
+        personagem.defesaBase = dado.defesaBase;
+        personagem.vivo = dado.vivo;
+
+        this.adicionarPersonagem(personagem);
+        if (personagem.id > maxId) {
+          maxId = personagem.id;
+        }
+      }
+    } catch (erro) {
+      console.error(`\n❌ Erro ao carregar dados: ${erro}`);
+    }
+  }
+
   get personagens() {
     return this._personagens;
   }
@@ -323,10 +392,4 @@ class Batalha {
 }
 
 let batalha: Batalha = new Batalha();
-const p1: Guerreiro = new Guerreiro(1, "Thorgal");
-const p2: Mago = new Mago(2, "Lyra");
-const p3: Arqueiro = new Arqueiro(3, "Elandor");
-batalha.adicionarPersonagem(p1);
-batalha.adicionarPersonagem(p2);
-batalha.adicionarPersonagem(p3);
 batalha.menu();

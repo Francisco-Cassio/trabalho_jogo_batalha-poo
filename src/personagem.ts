@@ -89,6 +89,10 @@ class Personagem {
     this._nome = novoNome;
   }
 
+  set id(novoId: number) {
+    this._id = novoId;
+  }
+
   set vida(novaVida: number) {
     this._vida = novaVida;
   }
@@ -127,6 +131,18 @@ class Personagem {
       "\n • Passiva: " +
       this.passiva
     );
+  }
+  public toJSON() {
+    return {
+      classe: this.constructor.name,
+      id: this._id,
+      nome: this._nome,
+      vida: this._vida,
+      ataqueBase: this._ataqueBase,
+      defesaBase: this._defesaBase,
+      vivo: this._vivo,
+      passiva: this._passiva,
+    };
   }
 }
 

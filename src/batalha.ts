@@ -32,7 +32,7 @@ class Batalha {
       console.log(" 4 - Logs de Ações");
       console.log("\n 0 - Sair da Aplicação");
       console.log("\n======================================\n");
-      opcao = this.input("Opção: ");
+      opcao = this.input("➡️ Opção: ");
       switch (opcao) {
         case "1":
           console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
@@ -74,30 +74,8 @@ class Batalha {
 
           console.log("\n=============================================\n");
 
-          console.log("\n👥 Escolha os personagens para a batalha:\n");
-          this.personagens.forEach((p) =>
-            console.log(`${p.id} - ${p.nome} (${p.constructor.name})`)
-          );
-          console.log(
-            "\n🏷️ Digite os IDs separados por vírgula (ex: 1,2) ou <Enter> para todos.\n"
-          );
-
-          const idsEscolhidos = this.input("➡️ Opção: ");
-          let participantes: Personagem[];
-
-          if (!idsEscolhidos.trim()) {
-            participantes = this.personagens;
-          } else {
-            const ids = idsEscolhidos
-              .split(",")
-              .map((id) => parseInt(id.trim()));
-            participantes = this.personagens.filter((p) => ids.includes(p.id));
-          }
-
-          if (participantes.length < 2) {
-            console.log("\n❌ Seleção inválida. Mínimo de 2 personagens.");
-            break;
-          }
+          const participantes = this.selecionarParticipantes();
+          if (participantes.length < 2) break;
 
           console.log("\n==============🔥 INICIANDO COMBATE 🔥==============");
           console.log(`\n🤺 Jogadores:\n`);
@@ -127,7 +105,7 @@ class Batalha {
           }
 
           console.log("\n=========== ❌ FIM DA BATALHA ❌ ===========");
-          const vencedor = participantes.find((p) => p.estaVivo());
+          const vencedor = this.verificarVencedor(participantes);
           if (vencedor) {
             console.log(`\n🏆 Resultado Final:`);
             console.log(
@@ -181,6 +159,48 @@ class Batalha {
     } while (opcao != "0");
 
     console.log("\n👋 Aplicação encerrada. Volte sempre!");
+  }
+
+  private selecionarParticipantes(): Personagem[] {
+    console.log("\n👥 Escolha os personagens para a batalha:\n");
+    this.personagens.forEach((p) =>
+      console.log(`${p.id} - ${p.nome} (${p.constructor.name})`)
+    );
+    console.log(
+      "\n🏷️ Digite:\n- IDs separados por vírgula (ex: 1,2).\n- <Enter> para selecionar todos.\n- '0' para cancelar.\n"
+    );
+
+    const idsEscolhidos = this.input("➡️ Opção: ");
+
+    if (idsEscolhidos.trim() === "0") return [];
+
+    if (!idsEscolhidos.trim()) {
+      return this.personagens;
+    }
+
+    const participantes: Personagem[] = [];
+    const ids = idsEscolhidos.split(",");
+
+    for (const item of ids) {
+      const id = parseInt(item.trim());
+      if (isNaN(id)) {
+        console.log("\n❌ Digite valores válidos.");
+        return this.selecionarParticipantes();
+      }
+      const p = this.personagens.find((personagem) => personagem.id === id);
+      if (!p) {
+        console.log(`\n❌ Personagem com ID ${id} não encontrado.`);
+        return this.selecionarParticipantes();
+      }
+      if (!participantes.includes(p)) participantes.push(p);
+    }
+
+    if (participantes.length < 2) {
+      console.log("\n❌ Seleção inválida. Mínimo de 2 personagens.");
+      return this.selecionarParticipantes();
+    }
+
+    return participantes;
   }
 
   public consultarId(id: number): Personagem {
@@ -288,10 +308,9 @@ class Batalha {
     return [atacante, defensor];
   }
 
-  public verificarVencedor(p1: Personagem, p2: Personagem): Personagem {
-    const personagensVivos = [p1, p2];
-    const quemEstaVivo = personagensVivos.filter((p) => p.estaVivo())[0];
-    return quemEstaVivo;
+  public verificarVencedor(participantes: Personagem[]): Personagem {
+    const vencedor = participantes.find((p) => p.estaVivo())!;
+    return vencedor;
   }
 
   get personagens() {

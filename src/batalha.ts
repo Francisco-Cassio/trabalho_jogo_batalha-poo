@@ -3,7 +3,7 @@ import { Acao } from "./acao";
 import { Guerreiro } from "./guerreiro";
 import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
-import { acertoEventoProbabilidade } from "./utils/utils";
+import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
 import prompt from "prompt-sync";
 
 class Batalha {
@@ -21,6 +21,8 @@ class Batalha {
     let opcaoPersonagem: string = "";
     let id: number = 1;
     let nome: string = "";
+    let atacante: Personagem;
+    let defensor: Personagem;
 
     do {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
@@ -57,56 +59,47 @@ class Batalha {
               console.log(`✅ Arqueiro ${nome} adicionado!`);
               break;
             default:
-              console.log("❌ Opção de classe inválida.");
+              console.log("\n❌ Opção de classe inválida.");
               break;
           }
           id++;
           break;
 
         case "2":
-          const atacanteNome: string = this.input("🗡️ Nome do Jogador 1: ");
-          const defensorNome: string = this.input("🗡️ Nome do Jogador 2: ");
+          console.log("\n==============🔥 INICIANDO COMBATE 🔥==============");
+          console.log(`\n🤺 Jogadores: `);
+          this.personagens.forEach((p) => {
+            console.log(`- ${p.nome} (${p.constructor.name})`);
+          });
+          this.input("\n➡️ <Enter> para iniciar o turno.");
 
-          let atacante = this.consultarPersonagem(atacanteNome)!;
-          let defensor = this.consultarPersonagem(defensorNome)!;
-
-          if (!atacante || !defensor) {
-            console.error(
-              "\n❌ Atacante ou defensor não encontrado. Verifique os nomes."
-            );
-            break;
-          }
-
-          if (!atacante.estaVivo() || !defensor.estaVivo()) {
-            console.log(`\n❌ Um dos personagens já está fora de combate!`);
-            break;
-          }
-
-          console.log(
-            `\n🔥 INICIANDO COMBATE: ${atacante.nome} vs ${defensor.nome} 🔥`
-          );
-
-          do {
+          while (this.personagens.filter((p) => p.estaVivo()).length > 1) {
             console.log(
               `\n============== ⚔️ RODADA DE COMBATE ⚔️ ==============`
             );
-            this.turno(atacante.id, defensor.id);
-            const auxTrocaPersonagens = atacante;
-            atacante = defensor;
-            defensor = auxTrocaPersonagens;
+            const combatentes = this.sortearCombatentes();
+            atacante = combatentes[0];
+            defensor = combatentes[1];
 
-            console.log(
-              `\n👤 Situação Atual:\n\n  • ${atacante.nome}: ${atacante.vida} vida\n  • ${defensor.nome}: ${defensor.vida} vida`
-            );
-          } while (atacante.estaVivo() && defensor.estaVivo());
+            this.turno(atacante.id, defensor.id);
+
+            console.log(`\n👤 Situação Atual:\n`);
+            this.personagens.forEach((p) => {
+              if (!p.estaVivo()) {
+                console.log(`  • ${p.nome}: ${p.vida} vida ❌ morto(a)`);
+              } else {
+                console.log(`  • ${p.nome}: ${p.vida} vida 💙`);
+              }
+            });
+          }
 
           console.log("\n=========== ❌ FIM DA BATALHA ❌ ===========");
-          const vencedor = this.verificarVencedor(atacante, defensor);
+          const vencedor = this.personagens.find((p) => p.estaVivo());
           if (vencedor) {
+            console.log(`\n🏆 Resultado Final:`);
             console.log(
-              `\n🏆 Vencedor: ${vencedor.nome} (${vencedor.constructor.name})`
+              `\n✔️ Vencedor: ${vencedor.nome} (${vencedor.constructor.name})`
             );
-            console.log(`🏷️ ID: ${vencedor.id}`);
             console.log(`🫀 Vida Restante: ${vencedor.vida}`);
             console.log(`🗡️ Ataque: ${vencedor.ataqueBase}`);
             console.log(`🛡️ Defesa: ${vencedor.defesaBase}`);
@@ -126,9 +119,9 @@ class Batalha {
         case "0":
           break;
         default:
-          console.log("❌ Opção inválida!");
+          console.log("\n❌ Opção inválida!");
       }
-      this.input("\n☑️ Operação finalizada. Pressione <Enter> para continuar.");
+      this.input("\n☑️ Pressione <Enter> para continuar.");
     } while (opcao != "0");
 
     console.log("\n👋 Aplicação encerrada. Volte sempre!");
@@ -142,19 +135,20 @@ class Batalha {
     this.personagens.push(p);
   }
 
-  public turno(atacanteNome: number, defensorNome: number): Acao[] {
-    const atacante = this.consultarId(atacanteNome);
-    const defensor = this.consultarId(defensorNome);
+  public turno(atacanteId: number, defensorId: number): Acao[] {
+    const atacante = this.consultarId(atacanteId);
+    const defensor = this.consultarId(defensorId);
     const ataqueAtacante: number = atacante.ataqueBase;
     const ataqueDefensor: number = defensor.ataqueBase;
+    const defesaDefensor: number = defensor.defesaBase;
 
     if (!atacante || !defensor) {
       console.error("\nAtacante ou defensor não encontrado.");
       return [];
     }
 
-    if (atacanteNome === defensorNome) {
-      console.error("\nUm personagem não pode atacar a si mesmo.");
+    if (atacanteId === defensorId) {
+      console.log("\nUm personagem não pode atacar a si mesmo.");
       return [];
     }
 
@@ -204,12 +198,13 @@ class Batalha {
     }
     if (!ataqueIgnorado) {
       console.log(
-        `💥 ${atacante.nome} causou ${acaoExecutada.valorDano} de dano.`
+        `💥 ${atacante.nome} causou ${acaoExecutada.valorDano} de dano em ${defensor.nome}.`
       );
     }
 
     atacante.ataqueBase = ataqueAtacante;
     defensor.ataqueBase = ataqueDefensor;
+    defensor.defesaBase = defesaDefensor;
     this.acoes.push(acaoExecutada);
     return [acaoExecutada];
   }
@@ -224,6 +219,15 @@ class Batalha {
 
   public listarAcoes(): Acao[] {
     return this.acoes;
+  }
+
+  public sortearCombatentes(): Personagem[] {
+    const vivos = this.personagens.filter((p) => p.estaVivo());
+    const atacante = sorteio(vivos);
+    const defensores = vivos.filter((p) => p !== atacante);
+    const defensor = sorteio(defensores);
+
+    return [atacante, defensor];
   }
 
   public verificarVencedor(p1: Personagem, p2: Personagem): Personagem {

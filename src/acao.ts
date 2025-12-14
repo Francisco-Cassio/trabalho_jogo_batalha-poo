@@ -60,7 +60,7 @@ class Acao {
       "\n🩹 Valor do Dano: " +
       this.valorDano +
       "\n⌚ Data e Hora da Ação: " +
-      this.dataHora.toLocaleString()
+      this.dataHora.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
     );
   }
 }

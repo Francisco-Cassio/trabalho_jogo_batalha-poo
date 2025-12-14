@@ -9,6 +9,9 @@ class Personagem {
   private _vivo: boolean;
   private _historico: Acao[];
   private _passiva: string;
+  private _danoCausadoTotal: number;
+  private _danoRecebidoTotal: number;
+  private _abates: number;
 
   constructor(id: number, nome: string, ataqueBase: number) {
     this._id = id;
@@ -19,9 +22,18 @@ class Personagem {
     this._vivo = true;
     this._historico = [];
     this._passiva = "";
+    this._danoCausadoTotal = 0;
+    this._danoRecebidoTotal = 0;
+    this._abates = 0;
   }
 
   public atacar(alvo: Personagem): Acao {
+    if (!this.estaVivo()) {
+      throw new Error(
+        `\n❌ ${this.constructor.name} ${this.nome} não pode atacar, pois está morto.`
+      );
+    }
+
     let ataque: Acao = new Acao(
       this,
       alvo,
@@ -34,11 +46,30 @@ class Personagem {
     return ataque;
   }
 
-  public receberDano(valor: number): void {
-    if (this.vida > 0 && valor > 0) {
-      this.vida -= valor - this.defesaBase;
-    }
+  public registrarDanoCausado(dano: number): void {
+    this._danoCausadoTotal += dano;
+  }
 
+  public registrarDanoRecebido(dano: number): void {
+    this._danoRecebidoTotal += dano;
+  }
+
+  public registrarAbate(): void {
+    this._abates += 1;
+  }
+
+  public receberDano(valor: number): void {
+    if (!this.estaVivo()) {
+      throw new Error(
+        `\n❌ ${this.constructor.name} ${this.nome} já está morto(a) e não pode receber mais dano.`
+      );
+    }
+    const danoEfetivo = Math.max(0, valor - this.defesaBase);
+
+    if (danoEfetivo > 0) {
+      this.vida -= danoEfetivo;
+      this.registrarDanoRecebido(danoEfetivo);
+    }
     if (this.vida <= 0) {
       this.vida = 0;
       this.vivo = false;
@@ -52,7 +83,6 @@ class Personagem {
   public registrarAcao(acao: Acao): void {
     this.historico.push(acao);
   }
-
   get vida() {
     return this._vida;
   }
@@ -83,6 +113,16 @@ class Personagem {
 
   get passiva() {
     return this._passiva;
+  }
+
+  get danoCausadoTotal() {
+    return this._danoCausadoTotal;
+  }
+  get danoRecebidoTotal() {
+    return this._danoRecebidoTotal;
+  }
+  get abates() {
+    return this._abates;
   }
 
   set nome(novoNome: string) {
@@ -142,6 +182,9 @@ class Personagem {
       defesaBase: this._defesaBase,
       vivo: this._vivo,
       passiva: this._passiva,
+      danoCausadoTotal: this._danoCausadoTotal,
+      danoRecebidoTotal: this._danoRecebidoTotal,
+      abates: this._abates,
     };
   }
 }

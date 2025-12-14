@@ -3,6 +3,7 @@ import { Acao } from "./acao";
 import { Guerreiro } from "./guerreiro";
 import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
+import { Barbaro } from "./barbaro";
 import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
 import prompt from "prompt-sync";
 import * as fs from "fs";
@@ -50,7 +51,7 @@ class Batalha {
           case "1":
             console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
             console.log(
-              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n"
+              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n"
             );
             opcaoPersonagem = this.input("➡️ Opção: ");
             switch (opcaoPersonagem) {
@@ -71,6 +72,12 @@ class Batalha {
                 const arqueiro: Arqueiro = new Arqueiro(id, nome);
                 this.adicionarPersonagem(arqueiro);
                 console.log(`\n✅ Arqueiro ${nome} adicionado!`);
+                break;
+              case "4":
+                nome = this.input("✉️ Nome: ");
+                const barbaro: Barbaro = new Barbaro(id, nome);
+                this.adicionarPersonagem(barbaro);
+                console.log(`\n✅ Bárbaro ${nome} adicionado!`);
                 break;
               default:
                 console.log("\n❌ Opção de classe inválida.");
@@ -96,7 +103,9 @@ class Batalha {
 
             console.log("\n=============================================\n");
 
-            const vivos = this.personagens.filter((p) => p.estaVivo());
+            const participantesGeraisVivos = this.personagens.filter((p) =>
+              p.estaVivo()
+            );
 
             console.log("📋 STATUS ATUAL DE TODOS OS PERSONAGENS:\n");
             this.personagens.forEach((p) => {
@@ -107,9 +116,9 @@ class Batalha {
             });
             console.log("\n=============================================");
 
-            if (vivos.length < 2) {
+            if (participantesGeraisVivos.length < 2) {
               throw new Error(
-                "❌ Combate não pode iniciar: Apenas 1 personagem está vivo."
+                `❌ Combate não pode iniciar: Apenas ${participantesGeraisVivos.length} personagem(ns) está(ão) vivo(s). Mínimo de 2 é necessário.`
               );
             }
 
@@ -130,7 +139,12 @@ class Batalha {
               console.log(
                 `\n============== ⚔️ RODADA DE COMBATE ⚔️ ==============`
               );
-              const combatentes = this.sortearCombatentes(participantes);
+              const vivosAtuais = participantes.filter((p) => p.estaVivo());
+
+              if (vivosAtuais.length < 2) {
+                break;
+              }
+              const combatentes = this.sortearCombatentes(vivosAtuais);
               atacante = combatentes[0];
               defensor = combatentes[1];
 
@@ -331,34 +345,34 @@ class Batalha {
     }
 
     console.log(
-      `\n🥊 Vez de ${atacante.nome} (${atacante.constructor.name}) atacando ${defensor.nome} (${defensor.constructor.name})\n`
+      `\n🥊 Vez de ${atacante.nome} (${atacante.constructor.name}) atacando ${defensor.nome} (${defensor.constructor.name})`
     );
 
     if (atacante instanceof Guerreiro) {
       if (atacante.vida < 30) {
         atacante.ataqueBase = Math.floor(atacante.ataqueBase * 1.3);
         console.log(
-          `🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${atacante.ataqueBase}`
+          `\n🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${atacante.ataqueBase}`
         );
       }
     } else if (atacante instanceof Mago) {
       if (defensor instanceof Guerreiro) {
         defensor.defesaBase = 0;
         console.log(
-          `🛡️ Defesa de ${defensor.nome} (Guerreiro) ignorada pela magia!`
+          `\n🛡️ Defesa de ${defensor.nome} (Guerreiro) ignorada pela magia!`
         );
       }
 
       if (defensor instanceof Arqueiro) {
         atacante.ataqueBase *= 2;
         console.log(
-          `⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${atacante.ataqueBase}`
+          `\n⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${atacante.ataqueBase}`
         );
       }
 
       atacante.receberDano(10);
       atacante.registrarDanoCausado(10);
-      console.log(`🩸 Mago sofre 10 de vida por custo de conjuração.`);
+      console.log(`\n🩸 Mago sofre 10 de vida por custo de conjuração.`);
 
       const acaoCusto = new Acao(
         atacante,
@@ -374,7 +388,15 @@ class Batalha {
       if (acertoEventoProbabilidade(50)) {
         arqueiro.ataqueBase *= arqueiro.ataqueMultiplo;
         console.log(
-          `🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${arqueiro.ataqueBase}`
+          `\n🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${arqueiro.ataqueBase}`
+        );
+      }
+    } else if (atacante instanceof Barbaro) {
+      const danoExtra = Math.floor(atacante.danoRecebidoTotal * 0.1);
+      if (danoExtra > 0) {
+        atacante.ataqueBase += danoExtra;
+        console.log(
+          `\n🩸 ${atacante.nome} ativou o Desespero! Dano Extra (10% do Dano Recebido Total). Ataque Bônus: ${atacante.ataqueBase}`
         );
       }
     }
@@ -388,7 +410,7 @@ class Batalha {
         danoAtaqueFinal = 0;
         ataqueIgnorado = true;
         console.log(
-          `🛡️ O ataque de ${atacante.nome} é muito fraco e não surtiu efeito em ${defensor.nome}. (Dano < Ataque de Defesa)`
+          `🛡️ O ataque de ${atacante.nome} é muito fraco e não surtiu efeito em ${defensor.nome}.`
         );
       }
     }
@@ -515,6 +537,9 @@ class Batalha {
           case "Arqueiro":
             personagem = new Arqueiro(dado.id, dado.nome);
             (personagem as Arqueiro).ataqueMultiplo = dado.ataqueMultiplo;
+            break;
+          case "Barbaro":
+            personagem = new Barbaro(dado.id, dado.nome);
             break;
           default:
             console.error(`Classe desconhecida: ${dado.classe}`);

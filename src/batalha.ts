@@ -4,6 +4,10 @@ import { Guerreiro } from "./guerreiro";
 import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
 import { Barbaro } from "./barbaro";
+import { Reflexivo } from "./reflexivo";
+import { Exausto } from "./exausto";
+import { Eterno } from "./eterno";
+import { AtaqueNaoPermitidoException } from "./ataqueNaoPermitidoException";
 import { BatalhaCompleta } from "./batalhaCompleta";
 import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
 import prompt from "prompt-sync";
@@ -58,7 +62,7 @@ class Batalha {
           case "1":
             console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
             console.log(
-              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n"
+              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n 5 - Reflexivo 🪞\n 6 - Exausto 💤\n 7 - Eterno ♾️\n"
             );
             opcaoPersonagem = this.input("➡️ Opção: ");
             switch (opcaoPersonagem) {
@@ -85,6 +89,24 @@ class Batalha {
                 const barbaro: Barbaro = new Barbaro(id, nome);
                 this.adicionarPersonagem(barbaro);
                 console.log(`\n✅ Bárbaro ${nome} adicionado!`);
+                break;
+              case "5":
+                nome = this.input("✉️ Nome: ");
+                const reflexivo: Reflexivo = new Reflexivo(id, nome);
+                this.adicionarPersonagem(reflexivo);
+                console.log(`\n✅ Reflexivo ${nome} adicionado!`);
+                break;
+              case "6":
+                nome = this.input("✉️ Nome: ");
+                const exausto: Exausto = new Exausto(id, nome);
+                this.adicionarPersonagem(exausto);
+                console.log(`\n✅ Exausto ${nome} adicionado!`);
+                break;
+              case "7":
+                nome = this.input("✉️ Nome: ");
+                const eterno: Eterno = new Eterno(id, nome);
+                this.adicionarPersonagem(eterno);
+                console.log(`\n✅ Eterno ${nome} adicionado!`);
                 break;
               default:
                 console.log("\n❌ Opção de classe inválida.");
@@ -153,7 +175,15 @@ class Batalha {
               atacante = combatentes[0];
               defensor = combatentes[1];
 
-              this.turno(atacante.id, defensor.id);
+              try {
+                this.turno(atacante.id, defensor.id);
+              } catch (erro) {
+                if (erro instanceof AtaqueNaoPermitidoException) {
+                  console.log(`\n${erro.message}`);
+                } else {
+                  throw erro;
+                }
+              }
 
               console.log(`\n👤 Situação Atual:\n`);
               participantes.forEach((p) => {
@@ -462,7 +492,7 @@ class Batalha {
   public turno(atacanteId: number, defensorId: number): Acao[] {
     const atacante = this.consultarId(atacanteId);
     const defensor = this.consultarId(defensorId);
-    const ataqueAtacante: number = atacante.ataqueBase;
+    let ataqueAtacante: number = atacante.ataqueBase;
     const ataqueDefensor: number = defensor.ataqueBase;
     const defesaDefensor: number = defensor.defesaBase;
 
@@ -475,6 +505,12 @@ class Batalha {
     if (!atacante.estaVivo()) {
       throw new Error(
         `O personagem ${atacante.nome} não pode atacar, pois está morto.`
+      );
+    }
+
+    if (defensor instanceof Eterno && !(atacante instanceof Eterno)) {
+      throw new AtaqueNaoPermitidoException(
+        `🚫 O ataque de ${atacante.nome} não surtiu efeito em ${defensor.nome} (Eterno) e foi repelido!`
       );
     }
 
@@ -535,6 +571,13 @@ class Batalha {
       }
     }
 
+    if (atacante instanceof Exausto) {
+      ataqueAtacante = Math.max(1, Math.floor(ataqueAtacante / 2));
+      console.log(
+        `\n💤 ${atacante.nome} cansou! Seu ataque base caiu para ${ataqueAtacante} para o próximo turno.`
+      );
+    }
+
     const acaoExecutada: Acao = atacante.atacar(defensor);
     let danoAtaqueFinal = acaoExecutada.valorDano;
     let ataqueIgnorado = false;
@@ -550,12 +593,33 @@ class Batalha {
     }
 
     if (!ataqueIgnorado) {
+      let danoEfetivo = Math.max(0, danoAtaqueFinal - defensor.defesaBase);
+      let danoReserva = danoEfetivo;
+      atacante.registrarDanoCausado(danoEfetivo);
+
+      if (defensor instanceof Reflexivo && danoEfetivo > 0) {
+        if (atacante instanceof Eterno) {
+          danoEfetivo = 0;
+          console.log(
+            `🚫 O dano refletivo não funciona em ${atacante.nome}, pois ele é um Eterno.`
+          );
+          danoEfetivo = danoReserva;
+        } else {
+          console.log(
+            `\n🪞 ${defensor.nome} reflete ${danoEfetivo} de dano de volta para ${atacante.nome}!`
+          );
+        }
+      }
       console.log(
         `\n💥 ATAQUE EXECUTADO: ${atacante.nome} causou ${danoAtaqueFinal} de dano em ${defensor.nome}.`
       );
-      const danoEfetivo = Math.max(0, danoAtaqueFinal - defensor.defesaBase);
-      console.log(`📉 Dano Recebido por ${defensor.nome}: ${danoEfetivo}`);
-      atacante.registrarDanoCausado(danoEfetivo);
+      console.log(
+        `📉 DEFESA REALIZADA: ${defensor.nome} recebeu um total de ${danoEfetivo} de dano!`
+      );
+
+      atacante.receberDano(danoEfetivo);
+      atacante.registrarDanoRecebido(danoEfetivo);
+      defensor.registrarDanoCausado(danoEfetivo);
 
       if (!defensor.estaVivo()) {
         atacante.registrarAbate();
@@ -707,6 +771,15 @@ class Batalha {
             break;
           case "Barbaro":
             personagem = new Barbaro(dado.id, dado.nome);
+            break;
+          case "Reflexivo":
+            personagem = new Reflexivo(dado.id, dado.nome);
+            break;
+          case "Exausto":
+            personagem = new Exausto(dado.id, dado.nome);
+            break;
+          case "Eterno":
+            personagem = new Eterno(dado.id, dado.nome);
             break;
           default:
             console.error(`Classe desconhecida: ${dado.classe}`);

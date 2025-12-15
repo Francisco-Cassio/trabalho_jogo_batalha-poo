@@ -218,13 +218,13 @@ class Batalha {
               "\n📜 ========= LOG DE AÇÕES (SELECIONE A BATALHA) ========= 📜"
             );
 
-            if (this._logHistorico.length === 0) {
+            if (this.logHistorico.length === 0) {
               console.log("\n❌ Nenhuma batalha finalizada registrada.");
               break;
             }
 
             console.log("\n📋 BATALHAS FINALIZADAS:\n");
-            this._logHistorico.forEach((b) => {
+            this.logHistorico.forEach((b) => {
               const vencedorNome = b.vencedor
                 ? b.vencedor.nome
                 : "Ninguém (Empate)";
@@ -248,7 +248,7 @@ class Batalha {
               break;
             }
 
-            const batalhaSelecionada = this._logHistorico.find(
+            const batalhaSelecionada = this.logHistorico.find(
               (b) => b.id === idBatalha
             );
 
@@ -515,7 +515,7 @@ class Batalha {
         10,
         new Date()
       );
-      this._acoesTemporarias.push(acaoCusto);
+      this.acoesTemporarias.push(acaoCusto);
       atacante.registrarAcao(acaoCusto);
     } else if (atacante instanceof Arqueiro) {
       const arqueiro = atacante as Arqueiro;
@@ -566,7 +566,7 @@ class Batalha {
     defensor.ataqueBase = ataqueDefensor;
     defensor.defesaBase = defesaDefensor;
 
-    this._acoesTemporarias.push(acaoExecutada);
+    this.acoesTemporarias.push(acaoExecutada);
     return [acaoExecutada];
   }
 
@@ -672,7 +672,7 @@ class Batalha {
 
   public salvarLogHistorico(): void {
     try {
-      const dadosParaSalvar = this._logHistorico.map((b) => b.toJSON());
+      const dadosParaSalvar = this.logHistorico.map((b) => b.toJSON());
       const dadosJSON = JSON.stringify(dadosParaSalvar, null, 2);
 
       fs.writeFileSync(this.NOME_LOG, dadosJSON, "utf-8");
@@ -689,7 +689,7 @@ class Batalha {
       const dadosJSON = fs.readFileSync(this.NOME_ARQUIVO, "utf-8");
       const dados: any[] = JSON.parse(dadosJSON);
 
-      this._personagens = [];
+      this.personagens = [];
       let maxId = 0;
 
       for (const dado of dados) {
@@ -736,7 +736,7 @@ class Batalha {
       const dadosJSON = fs.readFileSync(this.NOME_LOG, "utf-8");
       const dados: any[] = JSON.parse(dadosJSON);
 
-      this._logHistorico = [];
+      this.logHistorico = [];
 
       for (const dado of dados) {
         const acoesReconstruidas = dado.acoes.map((a: any) => {
@@ -763,7 +763,7 @@ class Batalha {
           ? ({ nome: dado.vencedor.nome } as Personagem)
           : null;
 
-        this._logHistorico.push(
+        this.logHistorico.push(
           new BatalhaCompleta(
             dado.id,
             participantesReconstruidos,
@@ -787,6 +787,14 @@ class Batalha {
 
   get acoesTemporarias() {
     return this._acoesTemporarias;
+  }
+
+  set personagens(personagens: Personagem[]) {
+    this._personagens = personagens;
+  }
+
+  set logHistorico(logHistorico: BatalhaCompleta[]) {
+    this._logHistorico = logHistorico;
   }
 
   set acoesTemporarias(acoes: Acao[]) {

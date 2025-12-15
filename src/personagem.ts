@@ -187,16 +187,16 @@ class Personagem {
   public toJSON() {
     return {
       classe: this.constructor.name,
-      id: this._id,
-      nome: this._nome,
-      vida: this._vida,
-      ataqueBase: this._ataqueBase,
-      defesaBase: this._defesaBase,
-      vivo: this._vivo,
-      passiva: this._passiva,
-      danoCausadoTotal: this._danoCausadoTotal,
-      danoRecebidoTotal: this._danoRecebidoTotal,
-      abates: this._abates,
+      id: this.id,
+      nome: this.nome,
+      vida: this.vida,
+      ataqueBase: this.ataqueBase,
+      defesaBase: this.defesaBase,
+      vivo: this.vivo,
+      passiva: this.passiva,
+      danoCausadoTotal: this.danoCausadoTotal,
+      danoRecebidoTotal: this.danoRecebidoTotal,
+      abates: this.abates,
     };
   }
 }

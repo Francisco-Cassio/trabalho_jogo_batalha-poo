@@ -4,19 +4,23 @@ import { Guerreiro } from "./guerreiro";
 import { Mago } from "./mago";
 import { Arqueiro } from "./arqueiro";
 import { Barbaro } from "./barbaro";
+import { BatalhaCompleta } from "./batalhaCompleta";
 import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
 import prompt from "prompt-sync";
 import * as fs from "fs";
 
 class Batalha {
   private _personagens: Personagem[];
-  private _acoes: Acao[];
+  private _acoesTemporarias: Acao[];
+  private _logHistorico: BatalhaCompleta[];
   private input = prompt();
-  private NOME_ARQUIVO = "dados_batalha.json";
+  private NOME_ARQUIVO = "dados_personagens.json";
+  private NOME_LOG = "dados_log_historico.json";
 
   constructor() {
     this._personagens = [];
-    this._acoes = [];
+    this._acoesTemporarias = [];
+    this._logHistorico = [];
   }
 
   public menu(): void {
@@ -32,20 +36,23 @@ class Batalha {
     let defensor: Personagem;
 
     this.carregarDados();
+    this.carregarLogHistorico();
     if (this.personagens.length > 0) {
       id = Math.max(...this.personagens.map((p) => p.id)) + 1;
     }
 
     do {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
-      console.log(" 1 - Adicionar Personagem");
-      console.log(" 2 - Iniciar Turno de Combate");
-      console.log(" 3 - Verificar Personagens");
-      console.log(" 4 - Logs de Ações");
-      console.log(" 5 - Resumo da Batalha (Estatísticas) 📈");
+      console.log(" 1 - Adicionar Personagem 👤");
+      console.log(" 2 - Iniciar Turno de Combate 🥊");
+      console.log(" 3 - Verificar Personagens 👥");
+      console.log(" 4 - Logs de Ações (Linha do Tempo) 📜");
+      console.log(" 5 - Resumo do Histórico de Batalhas 🏆");
+      console.log(" 6 - Reviver Personagem ✨");
       console.log("\n 0 - Sair da Aplicação");
       console.log("\n======================================\n");
       opcao = this.input("➡️ Opção: ");
+      console.clear();
       try {
         switch (opcao) {
           case "1":
@@ -87,13 +94,6 @@ class Batalha {
             break;
 
           case "2":
-            if (this.personagens.length === 0) {
-              console.log(
-                "\n❌ Não há personagens criados. Adicione personagens antes de iniciar o combate."
-              );
-              break;
-            }
-
             if (this.personagens.length < 2) {
               console.log(
                 "\n❌ Mínimo de 2 personagens são necessários para iniciar combate."
@@ -107,6 +107,13 @@ class Batalha {
               p.estaVivo()
             );
 
+            if (participantesGeraisVivos.length < 2) {
+              console.log(
+                "\n❌ Mínimo de 2 personagens vivos são necessários."
+              );
+              break;
+            }
+
             console.log("📋 STATUS ATUAL DE TODOS OS PERSONAGENS:\n");
             this.personagens.forEach((p) => {
               const status = p.estaVivo() ? "💙 VIVO" : "❌ MORTO";
@@ -116,15 +123,11 @@ class Batalha {
             });
             console.log("\n=============================================");
 
-            if (participantesGeraisVivos.length < 2) {
-              throw new Error(
-                `❌ Combate não pode iniciar: Apenas ${participantesGeraisVivos.length} personagem(ns) está(ão) vivo(s). Mínimo de 2 é necessário.`
-              );
-            }
-
             const participantes = this.selecionarParticipantes();
             if (participantes.length < 2) break;
 
+            this._acoesTemporarias = [];
+            console.clear();
             console.log(
               "\n==============🔥 INICIANDO COMBATE 🔥=============="
             );
@@ -133,7 +136,9 @@ class Batalha {
             participantes.forEach((p) => {
               console.log(`  • ${p.nome} (${p.constructor.name})`);
             });
+            console.log("\n==================================================");
             this.input("\n➡️ <Enter> para iniciar o turno.");
+            console.clear();
 
             while (participantes.filter((p) => p.estaVivo()).length > 1) {
               console.log(
@@ -158,22 +163,27 @@ class Batalha {
                   console.log(`  • ${p.nome}: ${p.vida} vida 💙`);
                 }
               });
+              console.log(
+                "\n=================================================="
+              );
+              this.input("\n➡️ <Enter> para avançar o turno.");
+              console.clear();
             }
+            const vencedor = this.verificarVencedor(participantes);
+            const novaBatalha = new BatalhaCompleta(
+              this._logHistorico.length + 1,
+              participantes,
+              [...this._acoesTemporarias],
+              vencedor || null
+            );
+            this._logHistorico.push(novaBatalha);
+            this._acoesTemporarias = [];
+            this.salvarLogHistorico();
 
             console.log("\n=========== ❌ FIM DA BATALHA ❌ ===========");
-            const vencedor = this.verificarVencedor(participantes);
 
-            if (vencedor) {
-              console.log(`\n🏆 Resultado Final:`);
-              console.log(
-                `\n✔️ Vencedor: ${vencedor.nome} (${vencedor.constructor.name})`
-              );
-              console.log(`🧡️ Vida Restante: ${vencedor.vida}`);
-            } else {
-              console.log(
-                "\n💥 Empate! Ambos os jogadores foram derrotados!\n"
-              );
-            }
+            this.gerarResumoBatalha(participantes, true);
+
             break;
 
           case "3":
@@ -205,47 +215,153 @@ class Batalha {
 
           case "4":
             console.log(
-              "\n📜 ========= LINHA DO TEMPO DA BATALHA (LOG DE AÇÕES) ========= 📜"
+              "\n📜 ========= LOG DE AÇÕES (SELECIONE A BATALHA) ========= 📜"
             );
 
-            if (this._acoes.length === 0) {
-              console.log(
-                "\n❌ Nenhuma ação registrada ainda. Inicie uma batalha!"
-              );
+            if (this._logHistorico.length === 0) {
+              console.log("\n❌ Nenhuma batalha finalizada registrada.");
               break;
             }
 
-            this._acoes.forEach((acao, index) => {
-              const acaoIndex = index + 1;
-
-              console.log(`\n➡️ AÇÃO ${acaoIndex}:`);
-              console.log(acao.toString());
+            console.log("\n📋 BATALHAS FINALIZADAS:\n");
+            this._logHistorico.forEach((b) => {
+              const vencedorNome = b.vencedor
+                ? b.vencedor.nome
+                : "Ninguém (Empate)";
+              console.log(
+                `[${
+                  b.id
+                }] - Data: ${b.dataFim.toLocaleString()} | Vencedor: ${vencedorNome} | Ações: ${
+                  b.acoes.length
+                }`
+              );
             });
 
+            console.log("");
+            const idBusca = this.input(
+              "➡️ Digite o ID da batalha para ver a Linha do Tempo: "
+            );
+            const idBatalha = parseInt(idBusca);
+
+            if (isNaN(idBatalha)) {
+              console.log("\n❌ ID inválido.");
+              break;
+            }
+
+            const batalhaSelecionada = this._logHistorico.find(
+              (b) => b.id === idBatalha
+            );
+
+            if (!batalhaSelecionada) {
+              console.log(`\n❌ Batalha com ID ${idBatalha} não encontrada.`);
+              break;
+            }
+            console.clear();
+            console.log(
+              "\n================================================================="
+            );
+            console.log(
+              `\n📄 BATALHA ID ${batalhaSelecionada.id} - LINHA DO TEMPO:`
+            );
+            batalhaSelecionada.acoes.forEach((acao, index) => {
+              console.log(`\n➡️ AÇÃO ${index + 1}:`);
+              console.log(
+                `⏱️ Tempo: ${acao.dataHora.toLocaleTimeString("pt-BR")}`
+              );
+              console.log(acao.toString());
+            });
             console.log(
               "\n================================================================="
             );
             break;
 
           case "5":
-            if (this.personagens.length === 0) {
-              console.log("\n❌ Não há personagens criados.");
+            console.log(
+              "\n🏆 ========= RESUMO DO HISTÓRICO DE BATALHAS ========= 🏆"
+            );
+
+            if (this._logHistorico.length === 0) {
+              console.log("\n❌ Nenhuma batalha finalizada registrada.");
               break;
             }
-            this.gerarResumoBatalha(this.personagens);
+
+            this._logHistorico.forEach((b) => {
+              const vencedorNome = b.vencedor
+                ? b.vencedor.nome
+                : "Ninguém (Empate)";
+              const participantesNomes = b.participantes
+                .map((p) => p.nome)
+                .join(", ");
+
+              console.log(`\n============== BATALHA ${b.id} ===============\n`);
+              console.log(`Data: ${b.dataFim.toLocaleString()}`);
+              console.log(`Participantes: ${participantesNomes}`);
+              console.log(`Total de Ações: ${b.acoes.length}`);
+              console.log(`Vencedor: ${vencedorNome}`);
+              console.log("\n==============================================");
+            });
+            break;
+
+          case "6":
+            console.log("\n✨ ======== OPÇÕES DE RESSURREIÇÃO ======== ✨\n");
+            console.log(" 1 - Reviver Personagem Individual (por ID)");
+            console.log(" 2 - Reviver TODOS os Personagens Mortos");
+            console.log(" 0 - Voltar ao Menu Principal\n");
+
+            const subOpcaoReviver = this.input("➡️ Opção: ");
+
+            switch (subOpcaoReviver) {
+              case "1":
+                const mortos = this.personagens.filter((p) => !p.estaVivo());
+
+                if (mortos.length === 0) {
+                  console.log(
+                    "\n❌ Não há personagens mortos para reviver individualmente."
+                  );
+                  break;
+                }
+
+                console.log("\n💀 Personagens Mortos:\n");
+                mortos.forEach((p) => console.log(`  • ID ${p.id}: ${p.nome}`));
+
+                const idReviverStr = this.input(
+                  "\n➡️ Digite o ID do personagem que deseja reviver: "
+                );
+                const idReviver = parseInt(idReviverStr);
+
+                if (isNaN(idReviver)) {
+                  throw new Error("ID inválido. Por favor, digite um número.");
+                }
+
+                this.reviverPersonagem(idReviver);
+                break;
+
+              case "2":
+                this.reviverTodosPersonagens();
+                break;
+
+              case "0":
+                console.log("\nVoltando ao Menu Principal...");
+                break;
+
+              default:
+                console.log("\n❌ Opção inválida no menu de Ressurreição!");
+            }
             break;
 
           case "0":
             this.salvarDados();
+            this.salvarLogHistorico();
             break;
 
           default:
             console.log("\n❌ Opção inválida!");
         }
       } catch (error: any) {
-        console.log(`\n${error.message}`);
+        console.log(`\n❌ ERRO: ${error.message}`);
       }
       this.input("\n☑️ Pressione <Enter> para continuar.");
+      console.clear();
     } while (opcao != "0");
 
     console.log("\n👋 Aplicação encerrada. Volte sempre!");
@@ -309,7 +425,7 @@ class Batalha {
         "Seleção inválida. Mínimo de 2 personagens são necessários."
       );
     }
-
+    console.clear();
     return participantes;
   }
 
@@ -331,6 +447,18 @@ class Batalha {
     this.personagens.push(p);
   }
 
+  private consultarPersonagem(nome: string): Personagem {
+    const personagemEncontrado = this.personagens.find(
+      (p) => p.nome.toLocaleLowerCase() === nome.toLocaleLowerCase()
+    );
+
+    if (!personagemEncontrado) {
+      throw new Error(`\n❌ Personagem com nome '${nome}' não encontrado.`);
+    }
+
+    return personagemEncontrado;
+  }
+
   public turno(atacanteId: number, defensorId: number): Acao[] {
     const atacante = this.consultarId(atacanteId);
     const defensor = this.consultarId(defensorId);
@@ -341,6 +469,12 @@ class Batalha {
     if (atacanteId === defensorId) {
       throw new Error(
         `O personagem ${atacante.nome} não pode atacar a si mesmo.`
+      );
+    }
+
+    if (!atacante.estaVivo()) {
+      throw new Error(
+        `O personagem ${atacante.nome} não pode atacar, pois está morto.`
       );
     }
 
@@ -381,7 +515,7 @@ class Batalha {
         10,
         new Date()
       );
-      this.acoes.push(acaoCusto);
+      this._acoesTemporarias.push(acaoCusto);
       atacante.registrarAcao(acaoCusto);
     } else if (atacante instanceof Arqueiro) {
       const arqueiro = atacante as Arqueiro;
@@ -432,56 +566,8 @@ class Batalha {
     defensor.ataqueBase = ataqueDefensor;
     defensor.defesaBase = defesaDefensor;
 
-    this.acoes.push(acaoExecutada);
+    this._acoesTemporarias.push(acaoExecutada);
     return [acaoExecutada];
-  }
-
-  private gerarResumoBatalha(participantes: Personagem[]): void {
-    console.log("\n==============================================");
-    console.log("🏆 RESUMO E ESTATÍSTICAS DA BATALHA 📋");
-    console.log("==============================================");
-
-    participantes.sort((a, b) => b.danoCausadoTotal - a.danoCausadoTotal);
-
-    participantes.forEach((p) => {
-      const status = p.estaVivo() ? "💙 VIVO" : "❌ MORTO";
-      console.log(`\n👤 ${p.nome} (${p.constructor.name}) ${status}`);
-      console.log(`  • Vida Final: ${p.vida}`);
-      console.log(`  • Dano Total Causado: ${p.danoCausadoTotal}`);
-      console.log(`  • Dano Total Recebido: ${p.danoRecebidoTotal}`);
-      console.log(`  • Abates: ${p.abates}`);
-    });
-
-    const vencedor = this.verificarVencedor(participantes);
-    if (vencedor) {
-      console.log(
-        `\n🏅 VENCEDOR: ${vencedor.nome} (${vencedor.constructor.name})`
-      );
-    } else {
-      console.log("\n💥 Resultado: Empate. Nenhum vencedor.");
-    }
-    console.log(`\n📜 Ações Registradas: ${this.acoes.length}`);
-    console.log("==============================================");
-  }
-
-  private consultarPersonagem(nome: string): Personagem {
-    const personagemEncontrado = this.personagens.find(
-      (p) => p.nome.toLocaleLowerCase() === nome.toLocaleLowerCase()
-    );
-
-    if (!personagemEncontrado) {
-      throw new Error(`\n❌ Personagem com nome '${nome}' não encontrado.`);
-    }
-
-    return personagemEncontrado;
-  }
-
-  public listarPersonagens(): Personagem[] {
-    return this.personagens;
-  }
-
-  public listarAcoes(): Acao[] {
-    return this.acoes;
   }
 
   public sortearCombatentes(
@@ -502,15 +588,96 @@ class Batalha {
     return vencedor;
   }
 
+  private gerarResumoBatalha(
+    participantes: Personagem[],
+    detalhado: boolean
+  ): void {
+    if (detalhado) {
+      console.log(`\n🏆 Resultado Final:`);
+      const vencedor = this.verificarVencedor(participantes);
+
+      if (vencedor) {
+        console.log(
+          `\n✔️ Vencedor: ${vencedor.nome} (${vencedor.constructor.name}), sobrevivendo com ${vencedor.vida} de vida.`
+        );
+      } else {
+        console.log("\n💥 Empate! Ambos os jogadores foram derrotados!");
+      }
+
+      console.log("\n==============================================");
+      console.log("📋 ESTATÍSTICAS DA BATALHA");
+
+      participantes.sort((a, b) => b.danoCausadoTotal - a.danoCausadoTotal);
+      participantes.forEach((p) => {
+        const status = p.estaVivo() ? "💙 VIVO" : "❌ MORTO";
+        console.log(`\n👤 ${p.nome} (${p.constructor.name}) ${status}`);
+        console.log(`  • Dano Causado Total: ${p.danoCausadoTotal}`);
+        console.log(`  • Abates: ${p.abates}`);
+      });
+      console.log("==============================================");
+    }
+  }
+
+  private reviverTodosPersonagens(): void {
+    const mortosAntes = this.personagens.filter((p) => !p.estaVivo());
+
+    if (mortosAntes.length === 0) {
+      console.log(
+        "\n❌ Não há personagens mortos para reviver. Todos estão vivos!"
+      );
+      return;
+    }
+
+    let count = 0;
+    for (const personagem of this.personagens) {
+      if (!personagem.estaVivo()) {
+        personagem.vida = 100;
+        personagem.vivo = true;
+        count++;
+      }
+    }
+
+    console.log(
+      `\n✨ ✅ ${count} personagem(ns) ressuscitado(s) com 100 de vida!`
+    );
+  }
+
+  private reviverPersonagem(id: number): void {
+    const personagem = this.personagens.find((p) => p.id === id);
+
+    if (!personagem) {
+      throw new Error(`\n❌ Personagem com ID ${id} não encontrado.`);
+    }
+
+    if (personagem.estaVivo()) {
+      throw new Error(`\n❌ ${personagem.nome} já está vivo(a)!`);
+    }
+
+    personagem.vida = 100;
+    personagem.vivo = true;
+    console.log(`\n✨ ✅ ${personagem.nome} ressuscitado(a) com 100 de vida!`);
+  }
+
   public salvarDados(): void {
     try {
       const dadosParaSalvar = this.personagens.map((p) => p.toJSON());
       const dadosJSON = JSON.stringify(dadosParaSalvar, null, 2);
 
       fs.writeFileSync(this.NOME_ARQUIVO, dadosJSON, "utf-8");
-      console.log(`\n💾 Dados salvos!`);
+      console.log(`\n💾 Dados de personagens salvos!`);
     } catch (erro) {
       console.error(`\n❌ Erro ao salvar dados: ${erro}`);
+    }
+  }
+
+  public salvarLogHistorico(): void {
+    try {
+      const dadosParaSalvar = this._logHistorico.map((b) => b.toJSON());
+      const dadosJSON = JSON.stringify(dadosParaSalvar, null, 2);
+
+      fs.writeFileSync(this.NOME_LOG, dadosJSON, "utf-8");
+    } catch (erro: any) {
+      console.error(`\n❌ Erro ao salvar log: ${erro.message}`);
     }
   }
 
@@ -561,12 +728,57 @@ class Batalha {
     }
   }
 
-  get personagens() {
-    return this._personagens;
+  public carregarLogHistorico(): void {
+    try {
+      if (!fs.existsSync(this.NOME_LOG)) {
+        return;
+      }
+      const dadosJSON = fs.readFileSync(this.NOME_LOG, "utf-8");
+      const dados: any[] = JSON.parse(dadosJSON);
+
+      this._logHistorico = [];
+
+      for (const dado of dados) {
+        const acoesReconstruidas = dado.acoes.map((a: any) => {
+          const origemSimulada = { nome: a.origemNome } as Personagem;
+          const alvoSimulado = { nome: a.alvoNome } as Personagem;
+          return new Acao(
+            origemSimulada,
+            alvoSimulado,
+            a.tipo,
+            a.valorDano,
+            a.dataHora
+          );
+        });
+
+        const participantesReconstruidos = dado.participantes.map(
+          (p: any) =>
+            ({
+              nome: p.nome,
+              danoCausadoTotal: p.danoCausadoTotal,
+              abates: p.abates,
+            } as Personagem)
+        );
+        const vencedorReconstruido = dado.vencedor
+          ? ({ nome: dado.vencedor.nome } as Personagem)
+          : null;
+
+        this._logHistorico.push(
+          new BatalhaCompleta(
+            dado.id,
+            participantesReconstruidos,
+            acoesReconstruidas,
+            vencedorReconstruido
+          )
+        );
+      }
+    } catch (erro: any) {
+      console.log(`\n❌ Erro ao carregar log de batalhas: ${erro.message}`);
+    }
   }
 
-  get acoes() {
-    return this._acoes;
+  get personagens() {
+    return this._personagens;
   }
 }
 

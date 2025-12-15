@@ -69,9 +69,9 @@ class Acao {
   toString() {
     return (
       "🔰 Origem: " +
-      this._origemNome +
+      this.origemNome +
       "\n🎯 Alvo: " +
-      this._alvoNome +
+      this.alvoNome +
       "\n⚙️ Tipo: " +
       this.tipo +
       "\n🩹 Valor do Dano: " +
@@ -83,11 +83,11 @@ class Acao {
 
   public toJSON() {
     return {
-      origemNome: this._origemNome,
-      alvoNome: this._alvoNome,
-      tipo: this._tipo,
-      valorDano: this._valorDano,
-      dataHora: this._dataHora.toISOString(),
+      origemNome: this.origemNome,
+      alvoNome: this.alvoNome,
+      tipo: this.tipo,
+      valorDano: this.valorDano,
+      dataHora: this.dataHora.toISOString(),
     };
   }
 }

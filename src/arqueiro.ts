@@ -21,7 +21,7 @@ class Arqueiro extends Personagem {
     const base = super.toJSON();
     return {
       ...base,
-      ataqueMultiplo: this._ataqueMultiplo,
+      ataqueMultiplo: this.ataqueMultiplo,
     };
   }
 }

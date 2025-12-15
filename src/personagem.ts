@@ -47,15 +47,15 @@ class Personagem {
   }
 
   public registrarDanoCausado(dano: number): void {
-    this._danoCausadoTotal += dano;
+    this.danoCausadoTotal += dano;
   }
 
   public registrarDanoRecebido(dano: number): void {
-    this._danoRecebidoTotal += dano;
+    this.danoRecebidoTotal += dano;
   }
 
   public registrarAbate(): void {
-    this._abates += 1;
+    this.abates += 1;
   }
 
   public receberDano(valor: number): void {
@@ -155,6 +155,18 @@ class Personagem {
 
   set passiva(novaPassiva: string) {
     this._passiva = novaPassiva;
+  }
+
+  set danoCausadoTotal(novoDano: number) {
+    this._danoCausadoTotal = novoDano;
+  }
+
+  set danoRecebidoTotal(novoDano: number) {
+    this._danoRecebidoTotal = novoDano;
+  }
+
+  set abates(novoAbates: number) {
+    this._abates = novoAbates;
   }
 
   toString() {

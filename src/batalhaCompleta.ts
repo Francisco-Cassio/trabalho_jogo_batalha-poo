@@ -39,18 +39,18 @@ class BatalhaCompleta {
 
   public toJSON() {
     return {
-      id: this._id,
-      dataFim: this._dataFim.toISOString(),
-      participantes: this._participantes.map((p) => ({
+      id: this.id,
+      dataFim: this.dataFim.toISOString(),
+      participantes: this.participantes.map((p) => ({
         nome: p.nome,
         classe: p.constructor.name,
         vidaFinal: p.vida,
         danoCausadoTotal: p.danoCausadoTotal,
         abates: p.abates,
       })),
-      acoes: this._acoes.map((a) => a.toJSON()),
-      vencedor: this._vencedor
-        ? { nome: this._vencedor.nome, classe: this._vencedor.constructor.name }
+      acoes: this.acoes.map((a) => a.toJSON()),
+      vencedor: this.vencedor
+        ? { nome: this.vencedor.nome, classe: this.vencedor.constructor.name }
         : null,
     };
   }

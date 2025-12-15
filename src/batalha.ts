@@ -126,7 +126,7 @@ class Batalha {
             const participantes = this.selecionarParticipantes();
             if (participantes.length < 2) break;
 
-            this._acoesTemporarias = [];
+            this.acoesTemporarias = [];
             console.clear();
             console.log(
               "\n==============🔥 INICIANDO COMBATE 🔥=============="
@@ -171,13 +171,13 @@ class Batalha {
             }
             const vencedor = this.verificarVencedor(participantes);
             const novaBatalha = new BatalhaCompleta(
-              this._logHistorico.length + 1,
+              this.logHistorico.length + 1,
               participantes,
-              [...this._acoesTemporarias],
+              [...this.acoesTemporarias],
               vencedor || null
             );
-            this._logHistorico.push(novaBatalha);
-            this._acoesTemporarias = [];
+            this.logHistorico.push(novaBatalha);
+            this.acoesTemporarias = [];
             this.salvarLogHistorico();
 
             console.log("\n=========== ❌ FIM DA BATALHA ❌ ===========");
@@ -280,12 +280,12 @@ class Batalha {
               "\n🏆 ========= RESUMO DO HISTÓRICO DE BATALHAS ========= 🏆"
             );
 
-            if (this._logHistorico.length === 0) {
+            if (this.logHistorico.length === 0) {
               console.log("\n❌ Nenhuma batalha finalizada registrada.");
               break;
             }
 
-            this._logHistorico.forEach((b) => {
+            this.logHistorico.forEach((b) => {
               const vencedorNome = b.vencedor
                 ? b.vencedor.nome
                 : "Ninguém (Empate)";
@@ -779,6 +779,18 @@ class Batalha {
 
   get personagens() {
     return this._personagens;
+  }
+
+  get logHistorico() {
+    return this._logHistorico;
+  }
+
+  get acoesTemporarias() {
+    return this._acoesTemporarias;
+  }
+
+  set acoesTemporarias(acoes: Acao[]) {
+    this._acoesTemporarias = acoes;
   }
 }
 

@@ -3,8 +3,6 @@ import { Personagem } from "./personagem";
 class Acao {
   private _origem: Personagem;
   private _alvo: Personagem;
-  private _origemNome: string;
-  private _alvoNome: string;
   private _tipo: string;
   private _valorDano: number;
   private _dataHora: Date;
@@ -14,80 +12,47 @@ class Acao {
     alvo: Personagem,
     tipo: string,
     valorDano: number,
-    dataHora: Date | string
+    dataHora: Date
   ) {
     this._origem = origem;
     this._alvo = alvo;
-    this._origemNome = origem.nome;
-    this._alvoNome = alvo.nome;
     this._tipo = tipo;
     this._valorDano = valorDano;
-    this._dataHora =
-      typeof dataHora === "string" ? new Date(dataHora) : dataHora;
+    this._dataHora = dataHora;
   }
 
-  get origem(): Personagem {
+  get origem() {
     return this._origem;
   }
-
-  get alvo(): Personagem {
+  get alvo() {
     return this._alvo;
   }
-
-  get tipo(): string {
+  get tipo() {
     return this._tipo;
   }
-
-  get valorDano(): number {
+  get valorDano() {
     return this._valorDano;
   }
-
-  get dataHora(): Date {
+  get dataHora() {
     return this._dataHora;
   }
 
-  get origemNome(): string {
-    return this._origemNome;
-  }
-
-  get alvoNome(): string {
-    return this._alvoNome;
-  }
-
-  set tipo(novoTipo: string) {
-    this._tipo = novoTipo;
-  }
-
-  set valorDano(novoDano: number) {
-    this._valorDano = novoDano;
-  }
-
-  set dataHora(novaData: Date) {
-    this._dataHora = novaData;
-  }
-
-  toString() {
-    return (
-      "🔰 Origem: " +
-      this.origemNome +
-      "\n🎯 Alvo: " +
-      this.alvoNome +
-      "\n⚙️ Tipo: " +
-      this.tipo +
-      "\n🩹 Valor do Dano: " +
-      this.valorDano +
-      "\n⌚ Data e Hora da Ação: " +
-      this.dataHora.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
-    );
+  toString(): string {
+    if (this.tipo === "ataque") {
+      return `⚔️ ${this.origem.nome} causou ${this.valorDano} de dano em ${this.alvo.nome}.`;
+    } else if (this.tipo === "autodano") {
+      return `🩸 ${this.origem.nome} sofreu ${this.valorDano} de dano (autodano).`;
+    }
+    return `${this.tipo} de ${this.origem.nome} em ${this.alvo.nome} (${this.valorDano})`;
   }
 
   public toJSON() {
     return {
-      origemNome: this.origemNome,
-      alvoNome: this.alvoNome,
+      origemNome: this.origem.nome,
+      alvoNome: this.alvo.nome,
       tipo: this.tipo,
       valorDano: this.valorDano,
-      dataHora: this.dataHora.toISOString(),
+      dataHora: this.dataHora,
     };
   }
 }

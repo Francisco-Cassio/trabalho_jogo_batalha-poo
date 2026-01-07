@@ -45,6 +45,7 @@ class Batalha {
       id = Math.max(...this.personagens.map((p) => p.id)) + 1;
     }
 
+    console.clear();
     do {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
       console.log(" 1 - Adicionar Personagem 👤");
@@ -147,6 +148,10 @@ class Batalha {
 
             const participantes = this.selecionarParticipantes();
             if (participantes.length < 2) break;
+
+            participantes.forEach((p) => {
+              p.ataqueBase = p.ataqueBaseInicial;
+            });
 
             this.acoesTemporarias = [];
             console.clear();
@@ -492,9 +497,6 @@ class Batalha {
   public turno(atacanteId: number, defensorId: number): Acao[] {
     const atacante = this.consultarId(atacanteId);
     const defensor = this.consultarId(defensorId);
-    let ataqueAtacante: number = atacante.ataqueBase;
-    const ataqueDefensor: number = defensor.ataqueBase;
-    const defesaDefensor: number = defensor.defesaBase;
 
     if (atacanteId === defensorId) {
       throw new Error(
@@ -508,6 +510,10 @@ class Batalha {
       );
     }
 
+    const ataqueBaseOriginalAtacante = atacante.ataqueBase;
+    const ataqueBaseOriginalDefensor = defensor.ataqueBase;
+    const defesaBaseOriginalDefensor = defensor.defesaBase;
+
     if (defensor instanceof Eterno && !(atacante instanceof Eterno)) {
       throw new AtaqueNaoPermitidoException(
         `🚫 O ataque de ${atacante.nome} não surtiu efeito em ${defensor.nome} (Eterno) e foi repelido!`
@@ -518,32 +524,32 @@ class Batalha {
       `\n🥊 Vez de ${atacante.nome} (${atacante.constructor.name}) atacando ${defensor.nome} (${defensor.constructor.name})`
     );
 
-    if (atacante instanceof Guerreiro) {
-      if (atacante.vida < 30) {
-        atacante.ataqueBase = Math.floor(atacante.ataqueBase * 1.3);
-        console.log(
-          `\n🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${atacante.ataqueBase}`
-        );
-      }
-    } else if (atacante instanceof Mago) {
+    let ataqueDoTurno = atacante.ataqueBase;
+
+    if (atacante instanceof Guerreiro && atacante.vida < 30) {
+      ataqueDoTurno = Math.floor(ataqueDoTurno * 1.3);
+      console.log(
+        `\n🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${ataqueDoTurno}`
+      );
+    }
+
+    if (atacante instanceof Mago) {
       if (defensor instanceof Guerreiro) {
         defensor.defesaBase = 0;
         console.log(
           `\n🛡️ Defesa de ${defensor.nome} (Guerreiro) ignorada pela magia!`
         );
       }
-
       if (defensor instanceof Arqueiro) {
-        atacante.ataqueBase *= 2;
+        ataqueDoTurno *= 2;
         console.log(
-          `\n⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${atacante.ataqueBase}`
+          `\n⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${ataqueDoTurno}`
         );
       }
 
       atacante.receberDano(10);
       atacante.registrarDanoCausado(10);
       console.log(`\n🩸 Mago sofre 10 de vida por custo de conjuração.`);
-
       const acaoCusto = new Acao(
         atacante,
         atacante,
@@ -551,34 +557,47 @@ class Batalha {
         10,
         new Date()
       );
-      this.acoesTemporarias.push(acaoCusto);
+      this._acoesTemporarias.push(acaoCusto);
       atacante.registrarAcao(acaoCusto);
-    } else if (atacante instanceof Arqueiro) {
+    }
+
+    if (atacante instanceof Arqueiro) {
       const arqueiro = atacante as Arqueiro;
       if (acertoEventoProbabilidade(50)) {
-        arqueiro.ataqueBase *= arqueiro.ataqueMultiplo;
+        ataqueDoTurno *= arqueiro.ataqueMultiplo;
         console.log(
-          `\n🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${arqueiro.ataqueBase}`
+          `\n🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${ataqueDoTurno}`
         );
       }
-    } else if (atacante instanceof Barbaro) {
+    }
+
+    if (atacante instanceof Barbaro) {
       const danoExtra = Math.floor(atacante.danoRecebidoTotal * 0.1);
       if (danoExtra > 0) {
-        atacante.ataqueBase += danoExtra;
+        ataqueDoTurno += danoExtra;
         console.log(
-          `\n🩸 ${atacante.nome} ativou o Desespero! Dano Extra (10% do Dano Recebido Total). Ataque Bônus: ${atacante.ataqueBase}`
+          `\n🩸 ${atacante.nome} ativou o Desespero! Dano Extra (10% do Dano Recebido Total). Ataque Bônus: ${ataqueDoTurno}`
         );
       }
     }
 
     if (atacante instanceof Exausto) {
-      ataqueAtacante = Math.max(1, Math.floor(ataqueAtacante / 2));
+      const novoAtaqueBase = Math.max(1, Math.floor(atacante.ataqueBase / 2));
+      atacante.ataqueBase = novoAtaqueBase;
+
       console.log(
-        `\n💤 ${atacante.nome} cansou! Seu ataque base caiu para ${ataqueAtacante} para o próximo turno.`
+        `\n💤 ${atacante.nome} cansou! Seu ataque base caiu para ${novoAtaqueBase} para o próximo turno.`
       );
     }
 
-    const acaoExecutada: Acao = atacante.atacar(defensor);
+    const acaoExecutada = new Acao(
+      atacante,
+      defensor,
+      "ataque",
+      ataqueDoTurno,
+      new Date()
+    );
+
     let danoAtaqueFinal = acaoExecutada.valorDano;
     let ataqueIgnorado = false;
 
@@ -594,22 +613,26 @@ class Batalha {
 
     if (!ataqueIgnorado) {
       let danoEfetivo = Math.max(0, danoAtaqueFinal - defensor.defesaBase);
-      let danoReserva = danoEfetivo;
       atacante.registrarDanoCausado(danoEfetivo);
 
       if (defensor instanceof Reflexivo && danoEfetivo > 0) {
         if (atacante instanceof Eterno) {
-          danoEfetivo = 0;
           console.log(
-            `🚫 O dano refletivo não funciona em ${atacante.nome}, pois ele é um Eterno.`
+            `🚫 ${defensor.nome} tentou refletir, mas o poder do Eterno ignora o reflexo.`
           );
-          danoEfetivo = danoReserva;
         } else {
           console.log(
             `\n🪞 ${defensor.nome} reflete ${danoEfetivo} de dano de volta para ${atacante.nome}!`
           );
+          atacante.receberDano(danoEfetivo);
+          defensor.registrarDanoCausado(danoEfetivo);
+          if (!atacante.estaVivo()) {
+            defensor.registrarAbate();
+          }
+          danoEfetivo = 0;
         }
       }
+
       console.log(
         `\n💥 ATAQUE EXECUTADO: ${atacante.nome} causou ${danoAtaqueFinal} de dano em ${defensor.nome}.`
       );
@@ -617,18 +640,16 @@ class Batalha {
         `📉 DEFESA REALIZADA: ${defensor.nome} recebeu um total de ${danoEfetivo} de dano!`
       );
 
-      atacante.receberDano(danoEfetivo);
-      atacante.registrarDanoRecebido(danoEfetivo);
-      defensor.registrarDanoCausado(danoEfetivo);
-
-      if (!defensor.estaVivo()) {
-        atacante.registrarAbate();
+      if (danoEfetivo > 0) {
+        defensor.receberDano(danoEfetivo);
+        if (!defensor.estaVivo()) {
+          atacante.registrarAbate();
+        }
       }
     }
 
-    atacante.ataqueBase = ataqueAtacante;
-    defensor.ataqueBase = ataqueDefensor;
-    defensor.defesaBase = defesaDefensor;
+    defensor.ataqueBase = ataqueBaseOriginalDefensor;
+    defensor.defesaBase = defesaBaseOriginalDefensor;
 
     this.acoesTemporarias.push(acaoExecutada);
     return [acaoExecutada];
@@ -820,7 +841,7 @@ class Batalha {
             alvoSimulado,
             a.tipo,
             a.valorDano,
-            a.dataHora
+            new Date(a.dataHora)
           );
         });
 

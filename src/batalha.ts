@@ -53,7 +53,7 @@ class Batalha {
       console.log(" 3 - Verificar Personagens 👥");
       console.log(" 4 - Logs de Ações (Linha do Tempo) 📜");
       console.log(" 5 - Resumo do Histórico de Batalhas 🏆");
-      console.log(" 6 - Reviver Personagem ✨");
+      console.log(" 6 - Recuperar Personagem ✨");
       console.log("\n 0 - Sair da Aplicação");
       console.log("\n======================================\n");
       opcao = this.input("➡️ Opção: ");
@@ -338,41 +338,55 @@ class Batalha {
             break;
 
           case "6":
-            console.log("\n✨ ======== OPÇÕES DE RESSURREIÇÃO ======== ✨\n");
-            console.log(" 1 - Reviver Personagem Individual (por ID)");
-            console.log(" 2 - Reviver TODOS os Personagens Mortos");
+            console.log("\n✨ ======== RECUPERAR PERSONAGENS ======== ✨\n");
+            console.log("🧙‍♂️ Status dos Personagens:\n");
+            this.personagens.forEach((p) => {
+              const status = p.estaVivo() ? "💙 VIVO" : "❌ MORTO";
+              console.log(
+                `  • ID ${p.id}: ${p.nome} (${status}) - ${p.vida} de vida`
+              );
+            });
+
+            if (this.personagens.length === 0) {
+              console.log("\n❌ Não há personagens para recuperar.");
+              break;
+            }
+
+            const todosComVidaCheia = this.personagens.every(
+              (personagem) => personagem.vida === 100
+            );
+
+            if (todosComVidaCheia) {
+              console.log(
+                "\n✨ Todos os personagens já estão com 100 de vida. Nada para recuperar."
+              );
+              break;
+            }
+
+            console.log("\n✨ ======================================= ✨\n");
+            console.log(" 1 - Recuperar Personagem Individual (por ID)");
+            console.log(" 2 - Recuperar TODOS os Personagens");
             console.log(" 0 - Voltar ao Menu Principal\n");
 
-            const subOpcaoReviver = this.input("➡️ Opção: ");
+            const subOpcaoRecuperar = this.input("➡️ Opção: ");
 
-            switch (subOpcaoReviver) {
+            switch (subOpcaoRecuperar) {
               case "1":
-                const mortos = this.personagens.filter((p) => !p.estaVivo());
-
-                if (mortos.length === 0) {
-                  console.log(
-                    "\n❌ Não há personagens mortos para reviver individualmente."
-                  );
-                  break;
-                }
-
-                console.log("\n💀 Personagens Mortos:\n");
-                mortos.forEach((p) => console.log(`  • ID ${p.id}: ${p.nome}`));
-
-                const idReviverStr = this.input(
-                  "\n➡️ Digite o ID do personagem que deseja reviver: "
+                console.log("");
+                const idRecuperarStr = this.input(
+                  "➡️ Digite o ID do personagem que deseja recuperar: "
                 );
-                const idReviver = parseInt(idReviverStr);
+                const idRecuperar = parseInt(idRecuperarStr);
 
-                if (isNaN(idReviver)) {
+                if (isNaN(idRecuperar)) {
                   throw new Error("ID inválido. Por favor, digite um número.");
                 }
 
-                this.reviverPersonagem(idReviver);
+                this.recuperarPersonagem(idRecuperar);
                 break;
 
               case "2":
-                this.reviverTodosPersonagens();
+                this.recuperarTodosPersonagens();
                 break;
 
               case "0":
@@ -380,7 +394,7 @@ class Batalha {
                 break;
 
               default:
-                console.log("\n❌ Opção inválida no menu de Ressurreição!");
+                console.log("\n❌ Opção inválida no menu de Recuperação!");
             }
             break;
 
@@ -703,44 +717,41 @@ class Batalha {
     }
   }
 
-  private reviverTodosPersonagens(): void {
-    const mortosAntes = this.personagens.filter((p) => !p.estaVivo());
-
-    if (mortosAntes.length === 0) {
-      console.log(
-        "\n❌ Não há personagens mortos para reviver. Todos estão vivos!"
-      );
+  private recuperarTodosPersonagens(): void {
+    if (this.personagens.length === 0) {
+      console.log("\n❌ Não há personagens cadastrados.");
       return;
     }
 
     let count = 0;
     for (const personagem of this.personagens) {
-      if (!personagem.estaVivo()) {
-        personagem.vida = 100;
-        personagem.vivo = true;
-        count++;
-      }
+      personagem.vida = 100;
+      personagem.vivo = true;
+      count++;
     }
 
-    console.log(
-      `\n✨ ✅ ${count} personagem(ns) ressuscitado(s) com 100 de vida!`
-    );
+    console.log(`\n✨ ✅ Todos os personagens foram recuperados!`);
   }
 
-  private reviverPersonagem(id: number): void {
+  private recuperarPersonagem(id: number): void {
     const personagem = this.personagens.find((p) => p.id === id);
-
     if (!personagem) {
       throw new Error(`\n❌ Personagem com ID ${id} não encontrado.`);
     }
 
-    if (personagem.estaVivo()) {
-      throw new Error(`\n❌ ${personagem.nome} já está vivo(a)!`);
+    if (personagem.vida === 100) {
+      console.log(
+        `\n✨ ✅ ${personagem.nome} já está com a vida completa! Não precisa ser recuperado(a).`
+      );
+      return;
     }
 
     personagem.vida = 100;
     personagem.vivo = true;
-    console.log(`\n✨ ✅ ${personagem.nome} ressuscitado(a) com 100 de vida!`);
+
+    console.log(
+      `\n✨ ✅ ${personagem.nome} foi recuperado(a) e agora está com 100 de vida!`
+    );
   }
 
   public salvarDados(): void {

@@ -1,4 +1,4 @@
-import { Personagem } from "./personagem";
+import { Personagem } from "../domain/personagem";
 
 class Acao {
   private _origem: Personagem;

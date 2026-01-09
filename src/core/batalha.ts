@@ -1,15 +1,15 @@
-import { Personagem } from "./personagem";
-import { Acao } from "./acao";
-import { Guerreiro } from "./guerreiro";
-import { Mago } from "./mago";
-import { Arqueiro } from "./arqueiro";
-import { Barbaro } from "./barbaro";
-import { Reflexivo } from "./reflexivo";
-import { Exausto } from "./exausto";
-import { Eterno } from "./eterno";
-import { AtaqueNaoPermitidoException } from "./ataqueNaoPermitidoException";
+import { Personagem } from "../domain/personagem";
+import { Acao } from "../shared/acao";
+import { Guerreiro } from "../domain/guerreiro";
+import { Mago } from "../domain/mago";
+import { Arqueiro } from "../domain/arqueiro";
+import { Barbaro } from "../domain/barbaro";
+import { Reflexivo } from "../domain/reflexivo";
+import { Exausto } from "../domain/exausto";
+import { Eterno } from "../domain/eterno";
+import { AtaqueNaoPermitidoException } from "../shared/ataqueNaoPermitidoException";
 import { BatalhaCompleta } from "./batalhaCompleta";
-import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
+import { acertoEventoProbabilidade, sorteio } from "../shared/utils/utils";
 import prompt from "prompt-sync";
 import * as fs from "fs";
 

@@ -1,4 +1,4 @@
-import { Acao } from "./acao";
+import { Acao } from "../shared/acao";
 
 class Personagem {
   private _id: number;

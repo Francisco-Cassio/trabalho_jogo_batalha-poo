@@ -1,5 +1,5 @@
-import { Personagem } from "./personagem";
-import { Acao } from "./acao";
+import { Personagem } from "../domain/personagem";
+import { Acao } from "../shared/acao";
 
 class BatalhaCompleta {
   private _id: number;

@@ -1,11 +1,15 @@
-import { Personagem } from "./personagem";
-import { Acao } from "./acao";
-import { Guerreiro } from "./guerreiro";
-import { Mago } from "./mago";
-import { Arqueiro } from "./arqueiro";
-import { Barbaro } from "./barbaro";
+import { Personagem } from "../domain/personagem";
+import { Acao } from "../shared/acao";
+import { Guerreiro } from "../domain/guerreiro";
+import { Mago } from "../domain/mago";
+import { Arqueiro } from "../domain/arqueiro";
+import { Barbaro } from "../domain/barbaro";
+import { Reflexivo } from "../domain/reflexivo";
+import { Exausto } from "../domain/exausto";
+import { Eterno } from "../domain/eterno";
+import { AtaqueNaoPermitidoException } from "../shared/ataqueNaoPermitidoException";
 import { BatalhaCompleta } from "./batalhaCompleta";
-import { acertoEventoProbabilidade, sorteio } from "./utils/utils";
+import { acertoEventoProbabilidade, sorteio } from "../shared/utils/utils";
 import prompt from "prompt-sync";
 import * as fs from "fs";
 
@@ -41,6 +45,7 @@ class Batalha {
       id = Math.max(...this.personagens.map((p) => p.id)) + 1;
     }
 
+    console.clear();
     do {
       console.log("\n⚔️ ======== ARENA DE BATALHA ======== 🛡️\n");
       console.log(" 1 - Adicionar Personagem 👤");
@@ -48,7 +53,7 @@ class Batalha {
       console.log(" 3 - Verificar Personagens 👥");
       console.log(" 4 - Logs de Ações (Linha do Tempo) 📜");
       console.log(" 5 - Resumo do Histórico de Batalhas 🏆");
-      console.log(" 6 - Reviver Personagem ✨");
+      console.log(" 6 - Recuperar Personagem ✨");
       console.log("\n 0 - Sair da Aplicação");
       console.log("\n======================================\n");
       opcao = this.input("➡️ Opção: ");
@@ -58,9 +63,12 @@ class Batalha {
           case "1":
             console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
             console.log(
-              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n"
+              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n 5 - Reflexivo 🪞\n 6 - Exausto 💤\n 7 - Eterno ♾️"
             );
-            opcaoPersonagem = this.input("➡️ Opção: ");
+            console.log("\n🔎 Digite:");
+            console.log(" - Opção de Classe do Personagem (1-7)");
+            console.log(" - '0' para voltar ao Menu\n");
+            opcaoPersonagem = this.input("➡️ Opção: ").toLocaleLowerCase();
             switch (opcaoPersonagem) {
               case "1":
                 nome = this.input("✉️ Nome: ");
@@ -85,6 +93,26 @@ class Batalha {
                 const barbaro: Barbaro = new Barbaro(id, nome);
                 this.adicionarPersonagem(barbaro);
                 console.log(`\n✅ Bárbaro ${nome} adicionado!`);
+                break;
+              case "5":
+                nome = this.input("✉️ Nome: ");
+                const reflexivo: Reflexivo = new Reflexivo(id, nome);
+                this.adicionarPersonagem(reflexivo);
+                console.log(`\n✅ Reflexivo ${nome} adicionado!`);
+                break;
+              case "6":
+                nome = this.input("✉️ Nome: ");
+                const exausto: Exausto = new Exausto(id, nome);
+                this.adicionarPersonagem(exausto);
+                console.log(`\n✅ Exausto ${nome} adicionado!`);
+                break;
+              case "7":
+                nome = this.input("✉️ Nome: ");
+                const eterno: Eterno = new Eterno(id, nome);
+                this.adicionarPersonagem(eterno);
+                console.log(`\n✅ Eterno ${nome} adicionado!`);
+                break;
+              case "0":
                 break;
               default:
                 console.log("\n❌ Opção de classe inválida.");
@@ -126,6 +154,10 @@ class Batalha {
             const participantes = this.selecionarParticipantes();
             if (participantes.length < 2) break;
 
+            participantes.forEach((p) => {
+              p.ataqueBase = p.ataqueBaseInicial;
+            });
+
             this.acoesTemporarias = [];
             console.clear();
             console.log(
@@ -153,7 +185,15 @@ class Batalha {
               atacante = combatentes[0];
               defensor = combatentes[1];
 
-              this.turno(atacante.id, defensor.id);
+              try {
+                this.turno(atacante.id, defensor.id);
+              } catch (erro) {
+                if (erro instanceof AtaqueNaoPermitidoException) {
+                  console.log(`\n${erro.message}`);
+                } else {
+                  throw erro;
+                }
+              }
 
               console.log(`\n👤 Situação Atual:\n`);
               participantes.forEach((p) => {
@@ -203,10 +243,13 @@ class Batalha {
               );
             });
 
-            console.log("\n🔎 Digite o nome para ver atributos: ");
-            const nomeBusca = this.input("➡️ ").toLocaleLowerCase();
-            console.log("\n==============================================");
+            console.log("\n🔎 Digite:");
+            console.log(" - Nome para ver atributos");
+            console.log(" - '0' para voltar ao Menu\n");
+            const nomeBusca = this.input("➡️ Opção: ").toLocaleLowerCase();
 
+            console.log("\n==============================================");
+            if (nomeBusca === "0") break;
             const personagemEncontrado = this.consultarPersonagem(nomeBusca);
 
             console.log("\n📋 STATUS DO PERSONAGEM:\n");
@@ -237,10 +280,11 @@ class Batalha {
               );
             });
 
-            console.log("");
-            const idBusca = this.input(
-              "➡️ Digite o ID da batalha para ver a Linha do Tempo: "
-            );
+            console.log("\n🔎 Digite:");
+            console.log(" - ID da batalha para ver a Linha do Tempo");
+            console.log(" - '0' para voltar ao Menu\n");
+            const idBusca = this.input("➡️ Opção: ").toLocaleLowerCase();
+            if (idBusca === "0") break;
             const idBatalha = parseInt(idBusca);
 
             if (isNaN(idBatalha)) {
@@ -303,41 +347,55 @@ class Batalha {
             break;
 
           case "6":
-            console.log("\n✨ ======== OPÇÕES DE RESSURREIÇÃO ======== ✨\n");
-            console.log(" 1 - Reviver Personagem Individual (por ID)");
-            console.log(" 2 - Reviver TODOS os Personagens Mortos");
+            console.log("\n✨ ======== RECUPERAR PERSONAGENS ======== ✨\n");
+            console.log("🧙‍♂️ Status dos Personagens:\n");
+            this.personagens.forEach((p) => {
+              const status = p.estaVivo() ? "💙 VIVO" : "❌ MORTO";
+              console.log(
+                `  • ID ${p.id}: ${p.nome} (${status}) - ${p.vida} de vida`
+              );
+            });
+
+            if (this.personagens.length === 0) {
+              console.log("\n❌ Não há personagens para recuperar.");
+              break;
+            }
+
+            const todosComVidaCheia = this.personagens.every(
+              (personagem) => personagem.vida === 100
+            );
+
+            if (todosComVidaCheia) {
+              console.log(
+                "\n✨ Todos os personagens já estão com 100 de vida. Nada para recuperar."
+              );
+              break;
+            }
+
+            console.log("\n✨ ======================================= ✨\n");
+            console.log(" 1 - Recuperar Personagem Individual (por ID)");
+            console.log(" 2 - Recuperar TODOS os Personagens");
             console.log(" 0 - Voltar ao Menu Principal\n");
 
-            const subOpcaoReviver = this.input("➡️ Opção: ");
+            const subOpcaoRecuperar = this.input("➡️ Opção: ");
 
-            switch (subOpcaoReviver) {
+            switch (subOpcaoRecuperar) {
               case "1":
-                const mortos = this.personagens.filter((p) => !p.estaVivo());
-
-                if (mortos.length === 0) {
-                  console.log(
-                    "\n❌ Não há personagens mortos para reviver individualmente."
-                  );
-                  break;
-                }
-
-                console.log("\n💀 Personagens Mortos:\n");
-                mortos.forEach((p) => console.log(`  • ID ${p.id}: ${p.nome}`));
-
-                const idReviverStr = this.input(
-                  "\n➡️ Digite o ID do personagem que deseja reviver: "
+                console.log("");
+                const idRecuperarStr = this.input(
+                  "➡️ Digite o ID do personagem que deseja recuperar: "
                 );
-                const idReviver = parseInt(idReviverStr);
+                const idRecuperar = parseInt(idRecuperarStr);
 
-                if (isNaN(idReviver)) {
+                if (isNaN(idRecuperar)) {
                   throw new Error("ID inválido. Por favor, digite um número.");
                 }
 
-                this.reviverPersonagem(idReviver);
+                this.recuperarPersonagem(idRecuperar);
                 break;
 
               case "2":
-                this.reviverTodosPersonagens();
+                this.recuperarTodosPersonagens();
                 break;
 
               case "0":
@@ -345,7 +403,7 @@ class Batalha {
                 break;
 
               default:
-                console.log("\n❌ Opção inválida no menu de Ressurreição!");
+                console.log("\n❌ Opção inválida no menu de Recuperação!");
             }
             break;
 
@@ -462,9 +520,6 @@ class Batalha {
   public turno(atacanteId: number, defensorId: number): Acao[] {
     const atacante = this.consultarId(atacanteId);
     const defensor = this.consultarId(defensorId);
-    const ataqueAtacante: number = atacante.ataqueBase;
-    const ataqueDefensor: number = defensor.ataqueBase;
-    const defesaDefensor: number = defensor.defesaBase;
 
     if (atacanteId === defensorId) {
       throw new Error(
@@ -478,36 +533,46 @@ class Batalha {
       );
     }
 
+    const ataqueBaseOriginalAtacante = atacante.ataqueBase;
+    const ataqueBaseOriginalDefensor = defensor.ataqueBase;
+    const defesaBaseOriginalDefensor = defensor.defesaBase;
+
+    if (defensor instanceof Eterno && !(atacante instanceof Eterno)) {
+      throw new AtaqueNaoPermitidoException(
+        `🚫 O ataque de ${atacante.nome} não surtiu efeito em ${defensor.nome} (Eterno) e foi repelido!`
+      );
+    }
+
     console.log(
       `\n🥊 Vez de ${atacante.nome} (${atacante.constructor.name}) atacando ${defensor.nome} (${defensor.constructor.name})`
     );
 
-    if (atacante instanceof Guerreiro) {
-      if (atacante.vida < 30) {
-        atacante.ataqueBase = Math.floor(atacante.ataqueBase * 1.3);
-        console.log(
-          `\n🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${atacante.ataqueBase}`
-        );
-      }
-    } else if (atacante instanceof Mago) {
+    let ataqueDoTurno = atacante.ataqueBase;
+
+    if (atacante instanceof Guerreiro && atacante.vida < 30) {
+      ataqueDoTurno = Math.floor(ataqueDoTurno * 1.3);
+      console.log(
+        `\n🔥 ${atacante.nome} ativou o Modo Fúria! Ataque Bônus: ${ataqueDoTurno}`
+      );
+    }
+
+    if (atacante instanceof Mago) {
       if (defensor instanceof Guerreiro) {
         defensor.defesaBase = 0;
         console.log(
           `\n🛡️ Defesa de ${defensor.nome} (Guerreiro) ignorada pela magia!`
         );
       }
-
       if (defensor instanceof Arqueiro) {
-        atacante.ataqueBase *= 2;
+        ataqueDoTurno *= 2;
         console.log(
-          `\n⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${atacante.ataqueBase}`
+          `\n⚡ Bônus Mágico! Dano dobrado contra ${defensor.nome}! Ataque Bônus: ${ataqueDoTurno}`
         );
       }
 
       atacante.receberDano(10);
       atacante.registrarDanoCausado(10);
       console.log(`\n🩸 Mago sofre 10 de vida por custo de conjuração.`);
-
       const acaoCusto = new Acao(
         atacante,
         atacante,
@@ -515,27 +580,47 @@ class Batalha {
         10,
         new Date()
       );
-      this.acoesTemporarias.push(acaoCusto);
+      this._acoesTemporarias.push(acaoCusto);
       atacante.registrarAcao(acaoCusto);
-    } else if (atacante instanceof Arqueiro) {
+    }
+
+    if (atacante instanceof Arqueiro) {
       const arqueiro = atacante as Arqueiro;
       if (acertoEventoProbabilidade(50)) {
-        arqueiro.ataqueBase *= arqueiro.ataqueMultiplo;
+        ataqueDoTurno *= arqueiro.ataqueMultiplo;
         console.log(
-          `\n🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${arqueiro.ataqueBase}`
-        );
-      }
-    } else if (atacante instanceof Barbaro) {
-      const danoExtra = Math.floor(atacante.danoRecebidoTotal * 0.1);
-      if (danoExtra > 0) {
-        atacante.ataqueBase += danoExtra;
-        console.log(
-          `\n🩸 ${atacante.nome} ativou o Desespero! Dano Extra (10% do Dano Recebido Total). Ataque Bônus: ${atacante.ataqueBase}`
+          `\n🏹 ${arqueiro.nome} ativou o Ataque Múltiplo! (x${arqueiro.ataqueMultiplo}) Ataque Bônus: ${ataqueDoTurno}`
         );
       }
     }
 
-    const acaoExecutada: Acao = atacante.atacar(defensor);
+    if (atacante instanceof Barbaro) {
+      const danoExtra = Math.floor(atacante.danoRecebidoTotal * 0.1);
+      if (danoExtra > 0) {
+        ataqueDoTurno += danoExtra;
+        console.log(
+          `\n🩸 ${atacante.nome} ativou o Desespero! Dano Extra (10% do Dano Recebido Total). Ataque Bônus: ${ataqueDoTurno}`
+        );
+      }
+    }
+
+    if (atacante instanceof Exausto) {
+      const novoAtaqueBase = Math.max(1, Math.floor(atacante.ataqueBase / 2));
+      atacante.ataqueBase = novoAtaqueBase;
+
+      console.log(
+        `\n💤 ${atacante.nome} cansou! Seu ataque base caiu para ${novoAtaqueBase} para o próximo turno.`
+      );
+    }
+
+    const acaoExecutada = new Acao(
+      atacante,
+      defensor,
+      "ataque",
+      ataqueDoTurno,
+      new Date()
+    );
+
     let danoAtaqueFinal = acaoExecutada.valorDano;
     let ataqueIgnorado = false;
 
@@ -550,21 +635,44 @@ class Batalha {
     }
 
     if (!ataqueIgnorado) {
+      let danoEfetivo = Math.max(0, danoAtaqueFinal - defensor.defesaBase);
+      atacante.registrarDanoCausado(danoEfetivo);
+
+      if (defensor instanceof Reflexivo && danoEfetivo > 0) {
+        if (atacante instanceof Eterno) {
+          console.log(
+            `🚫 ${defensor.nome} tentou refletir, mas o poder do Eterno ignora o reflexo.`
+          );
+        } else {
+          console.log(
+            `\n🪞 ${defensor.nome} reflete ${danoEfetivo} de dano de volta para ${atacante.nome}!`
+          );
+          atacante.receberDano(danoEfetivo);
+          defensor.registrarDanoCausado(danoEfetivo);
+          if (!atacante.estaVivo()) {
+            defensor.registrarAbate();
+          }
+          danoEfetivo = 0;
+        }
+      }
+
       console.log(
         `\n💥 ATAQUE EXECUTADO: ${atacante.nome} causou ${danoAtaqueFinal} de dano em ${defensor.nome}.`
       );
-      const danoEfetivo = Math.max(0, danoAtaqueFinal - defensor.defesaBase);
-      console.log(`📉 Dano Recebido por ${defensor.nome}: ${danoEfetivo}`);
-      atacante.registrarDanoCausado(danoEfetivo);
+      console.log(
+        `📉 DEFESA REALIZADA: ${defensor.nome} recebeu um total de ${danoEfetivo} de dano!`
+      );
 
-      if (!defensor.estaVivo()) {
-        atacante.registrarAbate();
+      if (danoEfetivo > 0) {
+        defensor.receberDano(danoEfetivo);
+        if (!defensor.estaVivo()) {
+          atacante.registrarAbate();
+        }
       }
     }
 
-    atacante.ataqueBase = ataqueAtacante;
-    defensor.ataqueBase = ataqueDefensor;
-    defensor.defesaBase = defesaDefensor;
+    defensor.ataqueBase = ataqueBaseOriginalDefensor;
+    defensor.defesaBase = defesaBaseOriginalDefensor;
 
     this.acoesTemporarias.push(acaoExecutada);
     return [acaoExecutada];
@@ -618,44 +726,41 @@ class Batalha {
     }
   }
 
-  private reviverTodosPersonagens(): void {
-    const mortosAntes = this.personagens.filter((p) => !p.estaVivo());
-
-    if (mortosAntes.length === 0) {
-      console.log(
-        "\n❌ Não há personagens mortos para reviver. Todos estão vivos!"
-      );
+  private recuperarTodosPersonagens(): void {
+    if (this.personagens.length === 0) {
+      console.log("\n❌ Não há personagens cadastrados.");
       return;
     }
 
     let count = 0;
     for (const personagem of this.personagens) {
-      if (!personagem.estaVivo()) {
-        personagem.vida = 100;
-        personagem.vivo = true;
-        count++;
-      }
+      personagem.vida = 100;
+      personagem.vivo = true;
+      count++;
     }
 
-    console.log(
-      `\n✨ ✅ ${count} personagem(ns) ressuscitado(s) com 100 de vida!`
-    );
+    console.log(`\n✨ ✅ Todos os personagens foram recuperados!`);
   }
 
-  private reviverPersonagem(id: number): void {
+  private recuperarPersonagem(id: number): void {
     const personagem = this.personagens.find((p) => p.id === id);
-
     if (!personagem) {
       throw new Error(`\n❌ Personagem com ID ${id} não encontrado.`);
     }
 
-    if (personagem.estaVivo()) {
-      throw new Error(`\n❌ ${personagem.nome} já está vivo(a)!`);
+    if (personagem.vida === 100) {
+      console.log(
+        `\n✨ ✅ ${personagem.nome} já está com a vida completa! Não precisa ser recuperado(a).`
+      );
+      return;
     }
 
     personagem.vida = 100;
     personagem.vivo = true;
-    console.log(`\n✨ ✅ ${personagem.nome} ressuscitado(a) com 100 de vida!`);
+
+    console.log(
+      `\n✨ ✅ ${personagem.nome} foi recuperado(a) e agora está com 100 de vida!`
+    );
   }
 
   public salvarDados(): void {
@@ -708,6 +813,15 @@ class Batalha {
           case "Barbaro":
             personagem = new Barbaro(dado.id, dado.nome);
             break;
+          case "Reflexivo":
+            personagem = new Reflexivo(dado.id, dado.nome);
+            break;
+          case "Exausto":
+            personagem = new Exausto(dado.id, dado.nome);
+            break;
+          case "Eterno":
+            personagem = new Eterno(dado.id, dado.nome);
+            break;
           default:
             console.error(`Classe desconhecida: ${dado.classe}`);
             continue;
@@ -747,7 +861,7 @@ class Batalha {
             alvoSimulado,
             a.tipo,
             a.valorDano,
-            a.dataHora
+            new Date(a.dataHora)
           );
         });
 

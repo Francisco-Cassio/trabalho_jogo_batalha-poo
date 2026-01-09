@@ -63,9 +63,12 @@ class Batalha {
           case "1":
             console.log("\n⚔️ ======== ADICIONAR PERSONAGEM ======== 🛡️");
             console.log(
-              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n 5 - Reflexivo 🪞\n 6 - Exausto 💤\n 7 - Eterno ♾️\n"
+              "\nSeu personagem será:\n\n 1 - Guerreiro 🛡️\n 2 - Mago 🔮\n 3 - Arqueiro 🏹\n 4 - Bárbaro 🪓\n 5 - Reflexivo 🪞\n 6 - Exausto 💤\n 7 - Eterno ♾️"
             );
-            opcaoPersonagem = this.input("➡️ Opção: ");
+            console.log("\n🔎 Digite:");
+            console.log(" - Opção de Classe do Personagem (1-7)");
+            console.log(" - '0' para voltar ao Menu\n");
+            opcaoPersonagem = this.input("➡️ Opção: ").toLocaleLowerCase();
             switch (opcaoPersonagem) {
               case "1":
                 nome = this.input("✉️ Nome: ");
@@ -108,6 +111,8 @@ class Batalha {
                 const eterno: Eterno = new Eterno(id, nome);
                 this.adicionarPersonagem(eterno);
                 console.log(`\n✅ Eterno ${nome} adicionado!`);
+                break;
+              case "0":
                 break;
               default:
                 console.log("\n❌ Opção de classe inválida.");
@@ -238,10 +243,13 @@ class Batalha {
               );
             });
 
-            console.log("\n🔎 Digite o nome para ver atributos: ");
-            const nomeBusca = this.input("➡️ ").toLocaleLowerCase();
-            console.log("\n==============================================");
+            console.log("\n🔎 Digite:");
+            console.log(" - Nome para ver atributos");
+            console.log(" - '0' para voltar ao Menu\n");
+            const nomeBusca = this.input("➡️ Opção: ").toLocaleLowerCase();
 
+            console.log("\n==============================================");
+            if (nomeBusca === "0") break;
             const personagemEncontrado = this.consultarPersonagem(nomeBusca);
 
             console.log("\n📋 STATUS DO PERSONAGEM:\n");
@@ -272,10 +280,11 @@ class Batalha {
               );
             });
 
-            console.log("");
-            const idBusca = this.input(
-              "➡️ Digite o ID da batalha para ver a Linha do Tempo: "
-            );
+            console.log("\n🔎 Digite:");
+            console.log(" - ID da batalha para ver a Linha do Tempo");
+            console.log(" - '0' para voltar ao Menu\n");
+            const idBusca = this.input("➡️ Opção: ").toLocaleLowerCase();
+            if (idBusca === "0") break;
             const idBatalha = parseInt(idBusca);
 
             if (isNaN(idBatalha)) {
